@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_PROFILE, MOCK_RECENT_ACTIVITY } from '../services/mockData';
-import type { PrepLevel } from '../types/problem';
+import { MOCK_PROFILE } from '../services/mockData';
+import type { PrepLevel, GeneratedSet } from '../types/problem';
+import { getSets } from '../api/client';
 import styles from '../styles/DashboardPageStyles.module.css';
+
+const LAST_SET_KEY = 'mathcraft_last_generated_set';
 
 function timeAgo(iso: string): string {
   const hours = Math.round((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60));
@@ -80,6 +83,21 @@ const Dashboard = (): React.ReactElement => {
   const [selectedPrep, setSelectedPrep] = useState<PrepLevel>(profile.prepLevels[0]);
   const firstName = profile.name.split(' ')[0];
 
+  const [recentSets, setRecentSets] = useState<GeneratedSet[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+
+  useEffect(() => {
+    getSets()
+      .then((data: GeneratedSet[]) => setRecentSets(data.slice(0, 5)))
+      .catch((error) => console.error('Failed to load recent activity:', error))
+      .finally(() => setLoadingRecent(false));
+  }, []);
+
+  const openSet = (set: GeneratedSet) => {
+    localStorage.setItem(LAST_SET_KEY, JSON.stringify(set));
+    navigate('/results');
+  };
+
   const handleGenerate = () => {
     navigate('/generate', { state: { prepLevel: selectedPrep } });
   };
@@ -143,19 +161,21 @@ const Dashboard = (): React.ReactElement => {
             <h2>Recent activity</h2>
             <button className={styles.textLink} onClick={() => navigate('/account')}>View all</button>
           </div>
-          {MOCK_RECENT_ACTIVITY.length === 0 ? (
+          {loadingRecent ? (
+            <p className={styles.emptyState}>Loading…</p>
+          ) : recentSets.length === 0 ? (
             <p className={styles.emptyState}>No sets generated yet, your history will show up here.</p>
           ) : (
             <ul className={styles.activityList}>
-              {MOCK_RECENT_ACTIVITY.map((item) => (
+              {recentSets.map((item) => (
                 <li key={item.id} className={styles.activityItem}>
                   <span className={`${styles.activityIcon} ${styles.iconTeal}`} aria-hidden="true">
                     {icons.document}
                   </span>
-                  <div className={styles.activityBody}>
-                    <strong>{item.name}</strong>
-                    <p>{item.topic} · {item.prepLevel} · {item.questionCount} questions</p>
-                  </div>
+                  <button className={styles.activityMain} onClick={() => openSet(item)}>
+                    <strong>{item.name || item.topic || 'Untitled set'}</strong>
+                    <p>{item.topic} · {item.prepLevel} · {item.questions.length} questions</p>
+                  </button>
                   <span className={styles.activityTime}>{timeAgo(item.createdAt)}</span>
                 </li>
               ))}

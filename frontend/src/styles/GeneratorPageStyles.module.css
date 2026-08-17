@@ -99,7 +99,6 @@
   gap: 12px;
 }
 
-/* --- dock: agrupa fontControls + draftStatus en una sola pastilla --- */
 .toolDock {
   display: flex;
   align-items: center;
@@ -843,4 +842,231 @@
   .sidebar {
     flex-direction: column;
   }
+}
+
+.curriculumRow {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.prepLevelSelect {
+  flex: 1;
+  min-width: 130px;
+}
+
+.topicSelect {
+  flex: 2;
+  min-width: 180px;
+}
+
+.subtopicSelect {
+  flex: 3;
+  min-width: 220px;
+}
+
+.groupRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  background: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.groupCounter {
+  margin: 0;
+}
+
+.groupFormatSelect {
+  flex: 1 1 140px;
+  margin: 0;
+}
+
+.groupAtLabel {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.groupDifficultySelect {
+  flex: 1 1 120px;
+  margin: 0;
+}
+
+.removeGroupButton {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 0 0.5rem;
+}
+
+.addGroupButton {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+
+.saveDefaultRowTop {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.outputLayout {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.outputColumn {
+  flex: 1 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sectionLabelTeal {
+  font-size: 15px;
+  color: var(--teal-deep);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sectionLabelViolet {
+  font-size: 15px;
+  color: var(--violet);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sectionLabelNote {
+  font-weight: 400;
+  color: var(--ink-faint);
+  font-size: 13px;
+  margin-left: 4px;
+}
+
+.previewPane {
+  flex: 0 0 280px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+  position: sticky;
+  top: 24px;
+}
+
+.previewPaneLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.previewCard {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  font-size: 13px;
+}
+
+.previewInstructions {
+  font-style: italic;
+  color: #6b7280;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+
+.previewQuestionRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.previewDifficultyTag {
+  font-size: 10px;
+  background: var(--cream);
+  border: 1px solid var(--border-soft);
+  color: var(--teal-deep);
+  padding: 2px 6px;
+  border-radius: 4px;
+  height: fit-content;
+}
+
+.previewHint {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #92400e;
+  font-size: 11px;
+  margin-bottom: 10px;
+}
+
+.previewGraphSpace {
+  height: 60px;
+  background: repeating-linear-gradient(transparent, transparent 9px, #f3f4f6 9px, #f3f4f6 10px),
+    repeating-linear-gradient(90deg, transparent, transparent 9px, #f3f4f6 9px, #f3f4f6 10px);
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.previewExtraSpace {
+  height: 50px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.previewAnswerSpace {
+  margin-top: 16px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.previewTeacherKey {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 2px dashed #e5e7eb;
+}
+
+.previewTeacherKeyLabel {
+  font-size: 10px;
+  color: var(--violet);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.previewWorkedSolution {
+  color: #4c1d95;
+  font-size: 11px;
+  margin-top: 6px;
+  background: #e0e7ff;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.previewFinalAnswer {
+  color: #4c1d95;
+  font-size: 11.5px;
+  margin-top: 6px;
+  font-weight: bold;
 }

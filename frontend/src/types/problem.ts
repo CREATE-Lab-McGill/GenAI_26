@@ -22,7 +22,7 @@ export const PROBLEM_FORMATS: ProblemFormat[] = [
   'Situational (SIT)',
 ];
 
-export type Difficulty = 'Remediation' | 'Easy' | 'Medium' | 'Hard' | 'Extension';
+export type Difficulty = 'Remediation' | 'Easy' | 'Medium' | 'Hard' | 'Extension' | 'Mixed';
 
 export const DIFFICULTIES: { value: Difficulty; helper: string }[] = [
   { value: 'Remediation', helper: 'Below-grade review and skill building.' },
@@ -30,6 +30,7 @@ export const DIFFICULTIES: { value: Difficulty; helper: string }[] = [
   { value: 'Medium', helper: 'Balanced grade-level practice.' },
   { value: 'Hard', helper: 'More challenging grade-level problems.' },
   { value: 'Extension', helper: 'Above-grade enrichment and challenge.' },
+  { value: 'Mixed', helper: 'A balanced mix of all difficulty levels.' },
 ];
 
 export type ScaffoldingLevel = 'None' | 'Hints' | 'Prompting' | 'Worked Example' | 'Skeletal Frame';
@@ -42,9 +43,12 @@ export const SCAFFOLDING_LEVELS: ScaffoldingLevel[] = [
   'Skeletal Frame',
 ];
 
-export interface ProblemTypeCount {
-  format: ProblemFormat;
+// NUEVO: Interfaz para los bloques dinámicos
+export interface QuestionGroup {
+  id: string;
   count: number;
+  format: ProblemFormat;
+  difficulty: Difficulty;
 }
 
 export type OutputInclude = 'Instructions' | 'Answer key' | 'Worked solutions' | 'Hints' | 'Scratch space';
@@ -70,16 +74,18 @@ export type QuestionOrder = 'By topic' | 'By difficulty' | 'Mixed' | 'Random';
 export type GroupBy = 'None' | 'Topic' | 'Difficulty' | 'Format';
 
 export interface GeneratorFormData {
-  learningStandard: string;
-  topic: string;
-  problemFormats: ProblemFormat[];
+  setName: string;
+  mainTopic: string; 
+  subtopic: string;
   realWorldContext: string;
 
   difficulty: Difficulty;
   dok: '1' | '2' | '3' | '4';
   scaffolding: ScaffoldingLevel[];
   customRules: string;
-  problemTypeCounts: ProblemTypeCount[];
+  
+  // Usamos grupos dinámicos en lugar de formatos fijos
+  questionGroups: QuestionGroup[];
 
   outputIncludes: OutputInclude[];
   displayOptions: DisplayOption[];
@@ -88,20 +94,19 @@ export interface GeneratorFormData {
 }
 
 export const initialGeneratorForm: GeneratorFormData = {
-  learningStandard: '',
-  topic: '',
-  problemFormats: ['Word Problem'],
+  setName: '',
+  mainTopic: '',       
+  subtopic: '',
   realWorldContext: '',
 
   difficulty: 'Medium',
   dok: '2',
   scaffolding: ['Hints'],
   customRules: '',
-  problemTypeCounts: [
-    { format: 'Word Problem', count: 5 },
-    { format: 'Multiple Choice', count: 0 },
-    { format: 'Short Answer', count: 0 },
-    { format: 'Situational (SIT)', count: 0 },
+  
+  // Empezamos con 1 bloque por defecto
+  questionGroups: [
+    { id: 'group_init_1', count: 5, format: 'Word Problem', difficulty: 'Medium' }
   ],
 
   outputIncludes: ['Instructions', 'Answer key'],
@@ -113,23 +118,27 @@ export const initialGeneratorForm: GeneratorFormData = {
 export interface GeneratedQuestion {
   id: string;
   prompt: string;
-  format: ProblemFormat;
-  currTag: string;
-  prepTag: PrepLevel;
-  difficultyTag: Difficulty;
-  answer?: string;
-  solution?: string;
-  hint?: string;
+  answer: string;
+  solution: string;
+  hint: string;
+
+  format?: ProblemFormat;
+  
+  topic?: string;
+  subtopic?: string;
+  prepLevel?: string;
+  difficulty?: string;
 }
 
 export interface GeneratedSet {
   id: string;
+  name: string;
   topic: string;
   createdAt: string;
   prepLevel: PrepLevel;
   formData: GeneratorFormData;
   questions: GeneratedQuestion[];
-  name?: string;
+  isSaved?: boolean;
 }
 
 export interface TeacherProfile {

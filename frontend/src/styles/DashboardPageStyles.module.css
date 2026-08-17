@@ -418,17 +418,26 @@
   height: 18px;
 }
 
-.activityBody {
+.activityMain {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
 }
 
-.activityBody strong {
+.activityMain strong {
   font-size: 15px;
   display: block;
 }
 
-.activityBody p {
+.activityMain p {
   font-size: 13.5px;
   margin-top: 2px;
   color: var(--ink-soft);

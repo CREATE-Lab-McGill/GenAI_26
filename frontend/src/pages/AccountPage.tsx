@@ -2,20 +2,18 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_PROFILE } from '../services/mockData';
 import type { GeneratedSet } from '../types/problem';
+import { getSets, deleteSet } from '../api/client';
 import styles from '../styles/AccountPageStyles.module.css';
 
-const HISTORY_KEY = 'mathcraft_history';
-const SAVED_SETS_KEY = 'mathcraft_saved_sets';
+const LAST_SET_KEY = 'mathcraft_last_generated_set';
 const DEFAULTS_KEY = 'mathcraft_generator_defaults';
 
 type Tab = 'history' | 'sets';
-type Language = 'English' | 'French';
-const LANGUAGES: Language[] = ['English', 'French'];
 
 type MathLevel = 'Low' | 'Medium' | 'High';
 type Pathway = 'CST' | 'TS' | 'SN';
 
-interface SubProfile {
+interface PrepProfile {
   id: string;
   name: string;
   grade: string;
@@ -27,7 +25,7 @@ interface SubProfile {
 }
 
 const GRADES = ['Secondary 1', 'Secondary 2', 'Secondary 3', 'Secondary 4', 'Secondary 5'];
-const CURRICULA = ['Quebec (QEP)', 'Ontario Curriculum', 'IB Diploma', 'Other'];
+const CURRICULA = ['Quebec (QEP)', 'Other'];
 const PATHWAYS: { value: Pathway; label: string }[] = [
   { value: 'CST', label: 'CST (Culture, Société et Technique)' },
   { value: 'TS', label: 'TS (Technico-sciences)' },
@@ -37,10 +35,10 @@ const CLASS_SIZES = ['Under 15 students', '15–20 students', '20–25 students'
 const MATH_LEVELS: MathLevel[] = ['Low', 'Medium', 'High'];
 const NEEDS = ['Struggling learners', 'Advanced learners', 'Language learners', 'IEP / accommodations'];
 
-const INITIAL_SUB_PROFILES: SubProfile[] = [
+const INITIAL_PREP_PROFILES: PrepProfile[] = [
   {
     id: 'sp1',
-    name: 'Sub-profile 1',
+    name: 'Prep 1',
     grade: 'Secondary 4',
     curriculum: 'Quebec (QEP)',
     pathways: ['TS'],
@@ -50,7 +48,7 @@ const INITIAL_SUB_PROFILES: SubProfile[] = [
   },
   {
     id: 'sp2',
-    name: 'Sub-profile 2',
+    name: 'Prep 2',
     grade: 'Secondary 4',
     curriculum: 'Quebec (QEP)',
     pathways: ['CST'],
@@ -69,21 +67,6 @@ const icons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
       <circle cx="12" cy="8" r="3.4" />
       <path d="M5 20c1.2-3.8 4-5.6 7-5.6s5.8 1.8 7 5.6" />
-    </svg>
-  ),
-  graduationCap: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
-      <path d="m3 9 9-4 9 4-9 4-9-4Z" />
-      <path d="M7 11v4.5c0 1.2 2.2 2.5 5 2.5s5-1.3 5-2.5V11" />
-      <path d="M20 9v6" />
-    </svg>
-  ),
-  sliders: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
-      <path d="M5 7h14M5 12h14M5 17h14" />
-      <circle cx="9" cy="7" r="1.6" fill="currentColor" stroke="none" />
-      <circle cx="15" cy="12" r="1.6" fill="currentColor" stroke="none" />
-      <circle cx="10" cy="17" r="1.6" fill="currentColor" stroke="none" />
     </svg>
   ),
   document: (
@@ -107,37 +90,44 @@ const icons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
       <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
     </svg>
-  )
+  ),
 };
 
 const Account = (): React.ReactElement => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(MOCK_PROFILE);
-  const [history, setHistory] = useState<GeneratedSet[]>([]);
-  const [savedSets, setSavedSets] = useState<GeneratedSet[]>([]);
+  const profile = MOCK_PROFILE;
+
+  const [sets, setSets] = useState<GeneratedSet[]>([]);
+  const [loadingSets, setLoadingSets] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('history');
   const [hasSavedDefaults, setHasSavedDefaults] = useState(false);
 
-  const [subProfiles, setSubProfiles] = useState<SubProfile[]>(INITIAL_SUB_PROFILES);
-  const [activeSubProfileId, setActiveSubProfileId] = useState(INITIAL_SUB_PROFILES[0].id);
+  const [prepProfiles, setPrepProfiles] = useState<PrepProfile[]>(INITIAL_PREP_PROFILES);
+  const [activePrepProfileId, setActivePrepProfileId] = useState(INITIAL_PREP_PROFILES[0].id);
 
   useEffect(() => {
-    setHistory(JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'));
-    setSavedSets(JSON.parse(localStorage.getItem(SAVED_SETS_KEY) || '[]'));
     setHasSavedDefaults(Boolean(localStorage.getItem(DEFAULTS_KEY)));
+
+    getSets()
+      .then((data: GeneratedSet[]) => setSets(data))
+      .catch((error) => console.error('Failed to load sets:', error))
+      .finally(() => setLoadingSets(false));
   }, []);
 
-  const activeSubProfile = subProfiles.find((p) => p.id === activeSubProfileId) ?? subProfiles[0];
+  const history = sets.slice(0, 20);
+  const savedSets = sets.filter((s) => s.isSaved);
 
-  const updateActiveSubProfile = (patch: Partial<SubProfile>) => {
-    setSubProfiles((prev) => prev.map((p) => (p.id === activeSubProfile.id ? { ...p, ...patch } : p)));
+  const activePrepProfile = prepProfiles.find((p) => p.id === activePrepProfileId) ?? prepProfiles[0];
+
+  const updateActivePrepProfile = (patch: Partial<PrepProfile>) => {
+    setPrepProfiles((prev) => prev.map((p) => (p.id === activePrepProfile.id ? { ...p, ...patch } : p)));
   };
 
-  const addSubProfile = () => {
+  const addPrepProfile = () => {
     const id = `sp_${Date.now()}`;
-    const next: SubProfile = {
+    const next: PrepProfile = {
       id,
-      name: `Sub-profile ${subProfiles.length + 1}`,
+      name: `Prep ${prepProfiles.length + 1}`,
       grade: GRADES[0],
       curriculum: CURRICULA[0],
       pathways: [],
@@ -145,15 +135,15 @@ const Account = (): React.ReactElement => {
       mathLevel: 'Medium',
       needs: [],
     };
-    setSubProfiles((prev) => [...prev, next]);
-    setActiveSubProfileId(id);
+    setPrepProfiles((prev) => [...prev, next]);
+    setActivePrepProfileId(id);
   };
 
-  const removeSubProfile = (id: string) => {
-    if (subProfiles.length <= 1) return;
-    const next = subProfiles.filter((p) => p.id !== id);
-    setSubProfiles(next);
-    if (activeSubProfileId === id) setActiveSubProfileId(next[0].id);
+  const removePrepProfile = (id: string) => {
+    if (prepProfiles.length <= 1) return;
+    const next = prepProfiles.filter((p) => p.id !== id);
+    setPrepProfiles(next);
+    if (activePrepProfileId === id) setActivePrepProfileId(next[0].id);
   };
 
   const clearDefaults = () => {
@@ -162,23 +152,22 @@ const Account = (): React.ReactElement => {
   };
 
   const openSet = (set: GeneratedSet) => {
-    localStorage.setItem('mathcraft_last_generated_set', JSON.stringify(set));
+    localStorage.setItem(LAST_SET_KEY, JSON.stringify(set));
     navigate('/results');
   };
 
-  const deleteFromHistory = (id: string) => {
-    const next = history.filter((s) => s.id !== id);
-    setHistory(next);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  const handleDeleteSet = async (id: string) => {
+    const previous = sets;
+    setSets((prev) => prev.filter((s) => s.id !== id));
+    try {
+      await deleteSet(id);
+    } catch (error) {
+      console.error('Failed to delete set:', error);
+      setSets(previous);
+    }
   };
 
-  const deleteSavedSet = (id: string) => {
-    const next = savedSets.filter((s) => s.id !== id);
-    setSavedSets(next);
-    localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(next));
-  };
-
-  const activeList = activeTab === 'history' ? history.slice(0, 20) : savedSets;
+  const activeList = activeTab === 'history' ? history : savedSets;
 
   return (
     <main className={styles.accountPage}>
@@ -193,9 +182,9 @@ const Account = (): React.ReactElement => {
       </header>
 
       <div className={styles.shell}>
-        
+
         <aside className={styles.sidebar}>
-          
+
           <section className={styles.card}>
             <div className={styles.profileHeader}>
               <div className={styles.avatar}>{profile.name.split(' ').map((n) => n[0]).join('')}</div>
@@ -205,43 +194,8 @@ const Account = (): React.ReactElement => {
                 <p className={styles.schoolText}>{profile.school}</p>
               </div>
             </div>
-          </section>
 
-          <section className={styles.card}>
-            <div className={styles.cardHeading}>
-              <span className={styles.cardIcon} aria-hidden="true">{icons.sliders}</span>
-              <div>
-                <h2>Global defaults</h2>
-                <p className={styles.cardSubtitle}>Applies to all profiles.</p>
-              </div>
-            </div>
-
-            <div className={styles.fieldBlock}>
-              <span className={styles.fieldLabel}>Subjects</span>
-              <div className={styles.subjectRow}>
-                {profile.subjects.map((subject) => (
-                  <span key={subject} className={styles.subjectPill}>{subject}</span>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.fieldBlock}>
-              <span className={styles.fieldLabel}>Language</span>
-              <div className={styles.languageRow}>
-                {LANGUAGES.map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    className={`${styles.languagePill} ${profile.defaultLanguage === lang ? styles.languagePillActive : ''}`}
-                    onClick={() => setProfile((p) => ({ ...p, defaultLanguage: lang }))}
-                  >
-                    {lang}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.fieldBlock}>
+            <div className={styles.presetBlock}>
               <span className={styles.fieldLabel}>Generation preset</span>
               {hasSavedDefaults ? (
                 <div className={styles.defaultsRow}>
@@ -254,34 +208,47 @@ const Account = (): React.ReactElement => {
             </div>
           </section>
 
+          <section className={styles.card}>
+            <div className={styles.statsGrid}>
+              <div className={styles.statBlock}>
+                <strong>{loadingSets ? '–' : history.length}</strong>
+                <span>Sets created</span>
+              </div>
+              <div className={styles.statBlock}>
+                <strong>{loadingSets ? '–' : savedSets.length}</strong>
+                <span>Saved sets</span>
+              </div>
+            </div>
+          </section>
+
         </aside>
 
         <div className={styles.mainContent}>
-          
+
           <section className={styles.card}>
             <div className={styles.cardHeading}>
               <span className={styles.cardIcon} aria-hidden="true">{icons.person}</span>
               <div>
-                <h2>Teaching profiles</h2>
+                <h2>Prep profiles</h2>
                 <p className={styles.cardSubtitle}>Fine-tune the generator for each specific class.</p>
               </div>
             </div>
 
             <div className={styles.profileTabs}>
-              {subProfiles.map((sp) => (
+              {prepProfiles.map((sp) => (
                 <button
                   key={sp.id}
                   type="button"
-                  className={`${styles.profileTab} ${sp.id === activeSubProfile.id ? styles.profileTabActive : ''}`}
-                  onClick={() => setActiveSubProfileId(sp.id)}
+                  className={`${styles.profileTab} ${sp.id === activePrepProfile.id ? styles.profileTabActive : ''}`}
+                  onClick={() => setActivePrepProfileId(sp.id)}
                 >
                   {sp.name}
-                  {subProfiles.length > 1 && sp.id === activeSubProfile.id && (
+                  {prepProfiles.length > 1 && sp.id === activePrepProfile.id && (
                     <span
                       className={styles.profileTabRemove}
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeSubProfile(sp.id);
+                        removePrepProfile(sp.id);
                       }}
                     >
                       ×
@@ -289,17 +256,17 @@ const Account = (): React.ReactElement => {
                   )}
                 </button>
               ))}
-              <button type="button" className={styles.addProfileButton} onClick={addSubProfile}>
-                <span aria-hidden="true">{icons.plus}</span> Add profile
+              <button type="button" className={styles.addProfileButton} onClick={addPrepProfile}>
+                <span aria-hidden="true">{icons.plus}</span> Add Prep
               </button>
             </div>
 
             <div className={styles.profileEditor}>
               <label className={styles.field}>
-                <span className={styles.fieldLabel}>Profile name</span>
+                <span className={styles.fieldLabel}>Prep name</span>
                 <input
-                  value={activeSubProfile.name}
-                  onChange={(e) => updateActiveSubProfile({ name: e.target.value })}
+                  value={activePrepProfile.name}
+                  onChange={(e) => updateActivePrepProfile({ name: e.target.value })}
                 />
               </label>
 
@@ -308,8 +275,8 @@ const Account = (): React.ReactElement => {
                   <span className={styles.fieldLabel}>Grade</span>
                   <select
                     className={styles.select}
-                    value={activeSubProfile.grade}
-                    onChange={(e) => updateActiveSubProfile({ grade: e.target.value })}
+                    value={activePrepProfile.grade}
+                    onChange={(e) => updateActivePrepProfile({ grade: e.target.value })}
                   >
                     {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
                   </select>
@@ -319,8 +286,8 @@ const Account = (): React.ReactElement => {
                   <span className={styles.fieldLabel}>Curriculum</span>
                   <select
                     className={styles.select}
-                    value={activeSubProfile.curriculum}
-                    onChange={(e) => updateActiveSubProfile({ curriculum: e.target.value })}
+                    value={activePrepProfile.curriculum}
+                    onChange={(e) => updateActivePrepProfile({ curriculum: e.target.value })}
                   >
                     {CURRICULA.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -334,8 +301,8 @@ const Account = (): React.ReactElement => {
                     <label key={p.value} className={styles.checkCard}>
                       <input
                         type="checkbox"
-                        checked={activeSubProfile.pathways.includes(p.value)}
-                        onChange={() => updateActiveSubProfile({ pathways: toggleInArray(activeSubProfile.pathways, p.value) })}
+                        checked={activePrepProfile.pathways.includes(p.value)}
+                        onChange={() => updateActivePrepProfile({ pathways: toggleInArray(activePrepProfile.pathways, p.value) })}
                       />
                       <span className={styles.checkBox}>✓</span>
                       <span>{p.label}</span>
@@ -351,8 +318,8 @@ const Account = (): React.ReactElement => {
                   <span className={styles.fieldLabel}>Class size</span>
                   <select
                     className={styles.select}
-                    value={activeSubProfile.classSize}
-                    onChange={(e) => updateActiveSubProfile({ classSize: e.target.value })}
+                    value={activePrepProfile.classSize}
+                    onChange={(e) => updateActivePrepProfile({ classSize: e.target.value })}
                   >
                     {CLASS_SIZES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -365,8 +332,8 @@ const Account = (): React.ReactElement => {
                       <button
                         key={level}
                         type="button"
-                        className={`${styles.segmentPill} ${activeSubProfile.mathLevel === level ? styles.segmentPillActive : ''}`}
-                        onClick={() => updateActiveSubProfile({ mathLevel: level })}
+                        className={`${styles.segmentPill} ${activePrepProfile.mathLevel === level ? styles.segmentPillActive : ''}`}
+                        onClick={() => updateActivePrepProfile({ mathLevel: level })}
                       >
                         {level}
                       </button>
@@ -382,8 +349,8 @@ const Account = (): React.ReactElement => {
                     <label key={need} className={styles.checkCard}>
                       <input
                         type="checkbox"
-                        checked={activeSubProfile.needs.includes(need)}
-                        onChange={() => updateActiveSubProfile({ needs: toggleInArray(activeSubProfile.needs, need) })}
+                        checked={activePrepProfile.needs.includes(need)}
+                        onChange={() => updateActivePrepProfile({ needs: toggleInArray(activePrepProfile.needs, need) })}
                       />
                       <span className={styles.checkBox}>✓</span>
                       <span>{need}</span>
@@ -404,7 +371,9 @@ const Account = (): React.ReactElement => {
               </button>
             </div>
 
-            {activeList.length === 0 ? (
+            {loadingSets ? (
+              <p className={styles.emptyStateCenter}>Loading your sets…</p>
+            ) : activeList.length === 0 ? (
               <p className={styles.emptyStateCenter}>
                 {activeTab === 'history' ? 'No problems generated yet.' : 'No saved sets yet. Save one from the results page.'}
               </p>
@@ -424,7 +393,7 @@ const Account = (): React.ReactElement => {
                       </button>
                       <button
                         className={styles.deleteIcon}
-                        onClick={() => (activeTab === 'history' ? deleteFromHistory(item.id) : deleteSavedSet(item.id))}
+                        onClick={() => handleDeleteSet(item.id)}
                         aria-label="Delete item"
                       >
                         {icons.trash}

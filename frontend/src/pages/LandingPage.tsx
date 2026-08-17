@@ -89,7 +89,7 @@ const LandingPage = (): React.ReactElement => {
           <button className={styles.ghostButton} onClick={() => navigate('/account')}>
             Sign in
           </button>
-          <button className={styles.primaryButton} onClick={() => navigate('/generate')}>
+          <button className={styles.primaryButton} onClick={() => navigate('/dashboard')}>
             Get started
           </button>
         </div>
@@ -109,7 +109,7 @@ const LandingPage = (): React.ReactElement => {
             <div className={styles.heroActions}>
               <button
                 className={cx(styles.primaryButton, styles.large)}
-                onClick={() => navigate('/generate')}
+                onClick={() => navigate('/dashboard')}
               >
                 Start generating <span aria-hidden="true">&rarr;</span>
               </button>
@@ -175,7 +175,7 @@ const LandingPage = (): React.ReactElement => {
           <p>Choose your topic, customize the settings, and let MathCraft generate your next problem set.</p>
           <button
             className={cx(styles.primaryButton, styles.large, styles.onDark)}
-            onClick={() => navigate('/generate')}
+            onClick={() => navigate('/dashboard')}
           >
             Start generating <span aria-hidden="true">&rarr;</span>
           </button>
