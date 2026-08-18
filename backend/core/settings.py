@@ -135,6 +135,7 @@ STATIC_URL = 'static/'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://mathcraft-fawn.vercel.app",
 ]
 
 if os.getenv("FRONTEND_URL"):
