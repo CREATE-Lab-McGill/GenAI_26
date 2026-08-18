@@ -135,10 +135,10 @@ const Generator = (): React.ReactElement => {
       const parsedDefaults = defaults ? JSON.parse(defaults) : null;
       const base = parsedDefaults
         ? {
-            ...initialGeneratorForm,
-            outputIncludes: parsedDefaults.outputIncludes ?? initialGeneratorForm.outputIncludes,
-            displayOptions: parsedDefaults.displayOptions ?? initialGeneratorForm.displayOptions,
-          }
+          ...initialGeneratorForm,
+          outputIncludes: parsedDefaults.outputIncludes ?? initialGeneratorForm.outputIncludes,
+          displayOptions: parsedDefaults.displayOptions ?? initialGeneratorForm.displayOptions,
+        }
         : initialGeneratorForm;
       const merged = saved ? { ...base, ...JSON.parse(saved) } : base;
       setFormData(merged);
@@ -557,7 +557,7 @@ const Generator = (): React.ReactElement => {
 
                     {formData.outputIncludes.includes('Hints') && (
                       <div className={styles.previewHint}>
-                          Hint: Use the compound interest formula to start.
+                        Hint: Use the compound interest formula to start.
                       </div>
                     )}
 
@@ -624,7 +624,14 @@ const Generator = (): React.ReactElement => {
                   </div>
                   <div>
                     <small>OUTPUT</small>
-                    <strong>{formData.outputIncludes.join(', ') || 'Problems only'}</strong>
+                    <p>
+                      <strong>Student:</strong>{' '}
+                      {[...formData.outputIncludes.filter(o => ['Instructions', 'Hints', 'Scratch space'].includes(o)), ...formData.displayOptions].join(', ') || 'None'}
+                    </p>
+                    <p>
+                      <strong>Teacher:</strong>{' '}
+                      {formData.outputIncludes.filter(o => ['Answer key', 'Worked solutions'].includes(o)).join(', ') || 'None'}
+                    </p>
                   </div>
                 </div>
               </div>

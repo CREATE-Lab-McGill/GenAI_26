@@ -227,6 +227,12 @@ const ProblemOutput = (): React.ReactElement => {
 
         {saveNotice && <p className={styles.saveNotice}>{saveNotice}</p>}
 
+        {outputIncludes.includes('Instructions') && (
+          <div className={styles.setInstructions}>
+            Instructions: Solve the following problems showing all your work.
+          </div>
+        )}
+
         <div className={styles.printHeader}>
           <h1>{set.name || set.topic || 'Untitled set'}</h1>
           <p>
