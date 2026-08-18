@@ -1,6 +1,5 @@
 import type {
   GeneratedQuestion,
-  GeneratorFormData,
   PrepLevel,
   TeacherProfile,
 } from '../types/problem';
