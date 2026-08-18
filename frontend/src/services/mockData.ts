@@ -41,15 +41,17 @@ function nextId(): string {
   return `q_${Date.now()}_${idCounter}`;
 }
 
+
 export function generateMockQuestion(
   topic: string,
-  format: GeneratedQuestion['format'],
-  difficulty: GeneratedQuestion['difficultyTag'],
+  format: any,
+  difficulty: any,
   prepLevel: PrepLevel,
   currTag: string,
 ): GeneratedQuestion {
   const seed = idCounter;
-  return {
+  
+  const mockQ: any = {
     id: nextId(),
     prompt: fakeStem(topic, seed),
     format,
@@ -60,14 +62,21 @@ export function generateMockQuestion(
     solution: 'Set up the ratio from the given rate, then solve for the missing quantity by cross-multiplying.',
     hint: 'Start by identifying which two quantities are changing together.',
   };
+  
+  
+  return mockQ as GeneratedQuestion;
 }
 
-export function generateMockSet(formData: GeneratorFormData, prepLevel: PrepLevel): GeneratedQuestion[] {
-  const currTag = formData.topic.trim() ? formData.topic.trim().split(/\s+/).slice(0, 2).join(' ') : 'General';
+export function generateMockSet(formData: any, prepLevel: PrepLevel): GeneratedQuestion[] {
+  const topicStr = formData.topic || formData.mainTopic || 'General';
+  const currTag = topicStr.trim() ? topicStr.trim().split(/\s+/).slice(0, 2).join(' ') : 'General';
   const questions: GeneratedQuestion[] = [];
-  formData.problemTypeCounts.forEach(({ format, count }) => {
+  
+  const loops = formData.problemTypeCounts || formData.questionGroups || [];
+  
+  loops.forEach(({ format, count }: any) => {
     for (let i = 0; i < count; i += 1) {
-      questions.push(generateMockQuestion(formData.topic, format, formData.difficulty, prepLevel, currTag));
+      questions.push(generateMockQuestion(topicStr, format, formData.difficulty, prepLevel, currTag));
     }
   });
   return questions;
