@@ -389,7 +389,7 @@ const Generator = (): React.ReactElement => {
                 <div className={`${styles.field} ${styles.full}`}>
                   <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                     Problem configuration *
-                    <InfoTooltip text="Define your set using one or more batches. Each batch specifies the number of questions, their format, and their difficulty level. Add another batch to include multiple question types." />
+                    <InfoTooltip text="Define your set using one or more types. Each type specifies the number of questions, their format, and their difficulty level. Add another type to include multiple question types." />
                   </span>
                   <div className={styles.countList}>
                     {formData.questionGroups.map((group) => (

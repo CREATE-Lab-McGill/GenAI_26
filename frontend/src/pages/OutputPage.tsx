@@ -2,8 +2,15 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TagBadge from '../components/TagBadge';
 import { generateMockQuestion } from '../services/mockData';
-import type { GeneratedQuestion, GeneratedSet, PrepLevel, ProblemFormat, Difficulty } from '../types/problem';
-import { PROBLEM_FORMATS } from '../types/problem';
+import type {
+  GeneratedQuestion,
+  GeneratedSet,
+  PrepLevel,
+  ProblemFormat,
+  Difficulty,
+  OutputInclude,
+  DisplayOption,
+} from '../types/problem';
 import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion } from '../api/client';
 import styles from '../styles/OutputPageStyles.module.css';
 import ReactMarkdown from "react-markdown";
@@ -13,6 +20,19 @@ import "katex/dist/katex.min.css";
 import "mathlive";
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
+
+const STUDENT_INCLUDE_OPTIONS: OutputInclude[] = ['Instructions', 'Hints', 'Scratch space'];
+const TEACHER_INCLUDE_OPTIONS: OutputInclude[] = ['Answer key', 'Worked solutions'];
+const STUDENT_DISPLAY_OPTIONS: DisplayOption[] = [
+  'Answer space',
+  'Extra room for solution',
+  'Graph / diagram space',
+  'Difficulty tag',
+];
+
+function toggleInArray<T>(list: T[], value: T): T[] {
+  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+}
 
 type PrintMode = 'student' | 'teacher';
 
@@ -41,8 +61,11 @@ const ProblemOutput = (): React.ReactElement => {
   const [setName, setSetName] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
   const [pendingDelete, setPendingDelete] = useState<GeneratedQuestion | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const [printMode, setPrintMode] = useState<PrintMode>('student');
+  const [showSetMenu, setShowSetMenu] = useState(false);
+  const setMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(LAST_SET_KEY);
@@ -50,13 +73,44 @@ const ProblemOutput = (): React.ReactElement => {
       const parsed = JSON.parse(raw) as GeneratedSet;
       setSet(parsed);
       setQuestions(parsed.questions);
+      setSetName(parsed.name || parsed.topic || '');
     }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (setMenuRef.current && !setMenuRef.current.contains(e.target as Node)) {
+        setShowSetMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const updateLocalStorage = (updatedSet: GeneratedSet) => {
     setSet(updatedSet);
     setQuestions(updatedSet.questions);
     localStorage.setItem(LAST_SET_KEY, JSON.stringify(updatedSet));
+  };
+
+  const toggleOutputInclude = (option: OutputInclude) => {
+    const current = set!.formData?.outputIncludes || [];
+    updateLocalStorage({
+      ...set!,
+      formData: { ...set!.formData, outputIncludes: toggleInArray(current, option) }
+    });
+  };
+
+  const toggleDisplayOption = (option: DisplayOption) => {
+    const current = set!.formData?.displayOptions || [];
+    updateLocalStorage({
+      ...set!,
+      formData: { ...set!.formData, displayOptions: toggleInArray(current, option) }
+    });
   };
 
   if (!set) {
@@ -174,6 +228,9 @@ const ProblemOutput = (): React.ReactElement => {
 
   const handleSaveSet = async () => {
     try {
+      if (setName.trim() && setName !== set.name) {
+        updateLocalStorage({ ...set, name: setName.trim() });
+      }
       await saveSet(set.id);
       setShowSaveModal(false);
       setSaveNotice('Saved to your sets ✓');
@@ -193,8 +250,7 @@ const ProblemOutput = (): React.ReactElement => {
 
   return (
     <main
-      className={`${styles.outputPage} ${printMode === 'student' ? styles.printAsStudent : styles.printAsTeacher
-        }`}
+      className={`${styles.outputPage} ${printMode === 'student' ? styles.printAsStudent : styles.printAsTeacher}`}
     >
       <header className={styles.topbar}>
         <a className={styles.brand} href="/" aria-label="MathCraft home">
@@ -212,16 +268,36 @@ const ProblemOutput = (): React.ReactElement => {
             <p>{questions.length} questions · {set.prepLevel}</p>
           </div>
           <div className={styles.setActions}>
-            <button className={styles.secondaryButton} onClick={() => setShowEditSetModal(true)}>Edit set</button>
-            <div className={styles.exportGroup}>
-              <button className={styles.secondaryButton} onClick={() => handlePrint('student')}>
-                Export student sheet
+            <div className={styles.setOptionsWrap} ref={setMenuRef}>
+              <button
+                className={styles.secondaryButton}
+                onClick={() => setShowSetMenu(!showSetMenu)}
+              >
+                Options ▾
               </button>
-              <button className={styles.secondaryButton} onClick={() => handlePrint('teacher')}>
-                Export answer key
-              </button>
+
+              {showSetMenu && (
+                <div className={styles.setOptionsDropdown}>
+                  <button className={styles.menuItem} onClick={() => { setShowEditSetModal(true); setShowSetMenu(false); }}>
+                    Edit set
+                  </button>
+                  <button className={styles.menuItem} onClick={() => { setShowSettingsModal(true); setShowSetMenu(false); }}>
+                    Output settings
+                  </button>
+                  <div className={styles.menuDivider} />
+                  <button className={styles.menuItem} onClick={() => { handlePrint('student'); setShowSetMenu(false); }}>
+                    Export student sheet
+                  </button>
+                  <button className={styles.menuItem} onClick={() => { handlePrint('teacher'); setShowSetMenu(false); }}>
+                    Export answer key
+                  </button>
+                </div>
+              )}
             </div>
-            <button className={styles.primaryButton} onClick={() => setShowSaveModal(true)}>Save set</button>
+
+            <button className={styles.primaryButton} onClick={() => setShowSaveModal(true)}>
+              Save set
+            </button>
           </div>
         </section>
 
@@ -413,7 +489,7 @@ const ProblemOutput = (): React.ReactElement => {
 
               <div className={styles.questionSidebar}>
                 <button className={`${styles.sidebarControl} ${styles.aiBtn}`} onClick={() => startAiEdit(q)}>
-                  Edit problem (AI)
+                  ✦ Edit problem (AI)
                 </button>
                 <button className={styles.sidebarControl} onClick={() => startEdit(q)}>
                   Edit text
@@ -456,16 +532,86 @@ const ProblemOutput = (): React.ReactElement => {
         </div>
       )}
 
+      {showSettingsModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowSettingsModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3>Edit output settings</h3>
+            <p className={styles.modalBody}>
+              Toggle what appears on the student worksheet and teacher key. Changes apply instantly.
+            </p>
+
+            <div className={styles.settingsGroup}>
+              <span className={styles.sectionLabelTeal}>
+                Student Worksheet <span className={styles.sectionLabelNote}>(What students see)</span>
+              </span>
+              <div className={styles.checkGrid}>
+                {STUDENT_INCLUDE_OPTIONS.map((o) => (
+                  <label key={o} className={styles.checkCard}>
+                    <input
+                      type="checkbox"
+                      checked={outputIncludes.includes(o)}
+                      onChange={() => toggleOutputInclude(o)}
+                    />
+                    <span className={styles.checkBox}>✓</span>
+                    <span>{o}</span>
+                  </label>
+                ))}
+                {STUDENT_DISPLAY_OPTIONS.map((d) => (
+                  <label key={d} className={styles.checkCard}>
+                    <input
+                      type="checkbox"
+                      checked={displayOptions.includes(d)}
+                      onChange={() => toggleDisplayOption(d)}
+                    />
+                    <span className={styles.checkBox}>✓</span>
+                    <span>{d}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className={`${styles.settingsGroup} ${styles.settingsGroupTeacher}`}>
+              <span className={styles.sectionLabelViolet}>
+                Teacher Key <span className={styles.sectionLabelNote}>(What you see)</span>
+              </span>
+              <div className={styles.checkGrid}>
+                {TEACHER_INCLUDE_OPTIONS.map((o) => (
+                  <label key={o} className={styles.checkCard}>
+                    <input
+                      type="checkbox"
+                      checked={outputIncludes.includes(o)}
+                      onChange={() => toggleOutputInclude(o)}
+                    />
+                    <span className={styles.checkBox}>✓</span>
+                    <span>{o}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button className={styles.primaryButton} onClick={() => setShowSettingsModal(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showSaveModal && (
         <div className={styles.modalOverlay} onClick={() => setShowSaveModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <h3>Ready to save!</h3>
             <p className={styles.modalBody}>
-              Your set <strong>"{set.name || set.topic}"</strong> is ready to be saved to your profile.
+              Confirm the name for this set before saving it to your profile.
             </p>
+            <input
+              className={styles.modalTextarea}
+              value={setName}
+              onChange={(e) => setSetName(e.target.value)}
+              placeholder="Set name"
+            />
             <div className={styles.modalActions}>
               <button className={styles.secondaryButton} onClick={() => setShowSaveModal(false)}>Cancel</button>
-              <button className={styles.primaryButton} onClick={handleSaveSet}>Confirm Save</button>
+              <button className={styles.primaryButton} onClick={handleSaveSet} disabled={!setName.trim()}>Confirm Save</button>
             </div>
           </div>
         </div>

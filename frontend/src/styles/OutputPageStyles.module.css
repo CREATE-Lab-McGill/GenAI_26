@@ -219,7 +219,7 @@
   background: var(--paper);
   border: 1px solid var(--border-soft);
   border-radius: 16px;
-  padding: 24px 28px;
+  padding: 24px 20px;
   box-shadow: var(--shadow-sm);
   transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease),
     opacity 0.2s var(--ease), transform 0.2s var(--ease);
@@ -865,6 +865,107 @@
   letter-spacing: 0.05em;
   border-bottom-left-radius: 16px;
 }
+.settingsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 20px;
+}
+
+.settingsGroup:first-of-type {
+  margin-top: 16px;
+}
+
+.sectionLabelTeal {
+  font-size: 13px;
+  color: var(--teal-deep);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sectionLabelViolet {
+  font-size: 13px;
+  color: var(--violet);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sectionLabelNote {
+  font-weight: 400;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  margin-left: 4px;
+}
+
+.checkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.checkCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--cream);
+  transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.checkCard:hover {
+  border-color: var(--border-strong);
+}
+
+.checkCard input {
+  display: none;
+}
+
+.checkBox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: transparent;
+  background: var(--paper);
+  flex-shrink: 0;
+}
+
+.checkCard input:checked + .checkBox {
+  background: var(--teal-deep);
+  border-color: var(--teal-deep);
+  color: var(--paper);
+}
+
+.checkCard:has(input:checked) {
+  border-color: var(--teal-deep);
+  background: rgba(33, 137, 126, 0.06);
+}
+
+.settingsGroupTeacher .checkCard input:checked + .checkBox {
+  /* background: var(--violet);
+  border-color: var(--violet); */
+  background: var(--teal-deep);
+  border-color: var(--teal-deep);
+}
+
+.settingsGroupTeacher .checkCard:has(input:checked) {
+  border-color: var(--teal-deep);
+  /* border-color: var(--violet); */
+  /* background: rgba(137, 128, 245, 0.06); */
+  background: rgba(33, 137, 126, 0.06);
+}
 
 @media (max-width: 850px) {
   .splitEditor {
@@ -884,4 +985,54 @@
 .aiEditPreview .previewLabel {
   background: rgba(137, 128, 245, 0.12);
   color: var(--violet);
+}
+
+.setOptionsWrap {
+  position: relative;
+  display: inline-block;
+}
+
+.setOptionsDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  background: var(--paper);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s var(--ease);
+}
+
+.menuItem:hover {
+  background: var(--cream);
+  color: var(--teal-deep);
+}
+
+.menuDivider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 4px 2px;
 }
