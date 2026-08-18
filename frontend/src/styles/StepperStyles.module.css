@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+.stepper {
+  --teal-deep: #21897e;
+  --teal-mid: #3ba99c;
+  --border-soft: rgba(33, 137, 126, 0.18);
+  --border-strong: rgba(33, 137, 126, 0.38);
+  --ink: #16302c;
+  --ink-faint: #7c918d;
+  --paper: #ffffff;
+  --font-display: 'Fraunces', 'Iowan Old Style', serif;
+  --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
+
+  display: flex;
+  gap: 10px;
+  padding: 6px;
+  background: var(--paper);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  font-family: var(--font-body);
+}
+
+.step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s ease;
+}
+
+.step:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.step:not(:disabled):hover {
+  background: rgba(33, 137, 126, 0.06);
+}
+
+.stepNumber {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(33, 137, 126, 0.08);
+  border: 1px solid var(--border-soft);
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.active .stepNumber {
+  background: var(--teal-deep);
+  border-color: var(--teal-deep);
+  color: var(--paper);
+}
+
+.complete .stepNumber {
+  background: rgba(33, 137, 126, 0.14);
+  border-color: var(--teal-mid);
+  color: var(--teal-deep);
+}
+
+.stepCopy {
+  display: none;
+  align-items: center;
+}
+
+.stepCopy strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.active .stepCopy strong {
+  color: var(--teal-deep);
+}
+
+@media (min-width: 760px) {
+  .stepCopy {
+    display: flex;
+  }
+}

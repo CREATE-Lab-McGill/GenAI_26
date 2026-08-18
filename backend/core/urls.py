@@ -16,9 +16,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from api.views import health_check
+from api.views import (
+    health_check, get_sets, generate_set,
+    edit_question, edit_set, save_set, delete_set, delete_question,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/", health_check),
+    path("api/sets/", get_sets),
+    path("api/generate/", generate_set),
+    path("api/questions/<str:pk>/edit/", edit_question),
+    path("api/questions/<str:pk>/", delete_question),
+    path("api/sets/<str:pk>/edit/", edit_set),
+    path("api/sets/<str:pk>/save/", save_set),
+    path("api/sets/<str:pk>/", delete_set),
 ]
