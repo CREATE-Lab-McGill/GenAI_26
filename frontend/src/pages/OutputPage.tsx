@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TagBadge from '../components/TagBadge';
+import FeedbackButton from '../components/Feedback';
+import ProfileButton from '../components/Profile';
 import { generateMockQuestion } from '../services/mockData';
 import type {
   GeneratedQuestion,
@@ -257,7 +259,7 @@ const ProblemOutput = (): React.ReactElement => {
           <span className={styles.brandMark}>M</span>
           <span>MathCraft</span>
         </a>
-        <button className={styles.profileButton} onClick={() => navigate('/account')}>Profile</button>
+        <ProfileButton />
       </header>
 
       <div className={styles.shell}>
@@ -268,6 +270,12 @@ const ProblemOutput = (): React.ReactElement => {
             <p>{questions.length} questions · {set.prepLevel}</p>
           </div>
           <div className={styles.setActions}>
+            <FeedbackButton
+              context={{
+                section: 'output-review',
+                metadata: { setId: set.id, questionCount: questions.length },
+              }}
+            />
             <div className={styles.setOptionsWrap} ref={setMenuRef}>
               <button
                 className={styles.secondaryButton}

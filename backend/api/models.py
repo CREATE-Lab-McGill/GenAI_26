@@ -34,3 +34,15 @@ class Question(models.Model):
 
     def __str__(self):
         return self.prompt[:50]
+
+class Feedback(models.Model):
+    id = models.CharField(max_length=100, primary_key=True)
+    message = models.TextField()
+    rating = models.CharField(max_length=20, blank=True, null=True) 
+    page = models.CharField(max_length=100)         
+    section = models.CharField(max_length=100, blank=True, null=True)  
+    metadata = models.JSONField(blank=True, null=True, default=dict) 
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']

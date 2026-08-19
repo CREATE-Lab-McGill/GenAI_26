@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ProblemSet, Question
+from .models import ProblemSet, Question, Feedback
 
 class QuestionSerializer(serializers.ModelSerializer):
     prepLevel = serializers.CharField(source='prep_level', required=False)
@@ -26,3 +26,10 @@ class ProblemSetSerializer(serializers.ModelSerializer):
             "id", "name", "topic", "difficulty", "prepLevel",
             "createdAt", "savedAt", "isSaved", "formData", "questions",
         ]
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+
+    class Meta:
+        model = Feedback
+        fields = ["id", "message", "rating", "page", "section", "metadata", "createdAt"]
