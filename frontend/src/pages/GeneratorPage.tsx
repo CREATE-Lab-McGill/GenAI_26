@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Stepper, { type StepDef } from '../components/Stepper';
 import InfoTooltip from '../components/InfoTootip';
+import FeedbackButton from '../components/Feedback';
+import ProfileButton from '../components/Profile';
 import { MOCK_PROFILE } from '../services/mockData';
 import type { GeneratedQuestion } from '../types/problem';
 import { generateSet } from '../api/client';
@@ -277,7 +279,13 @@ const Generator = (): React.ReactElement => {
             </div>
             <span className={styles.draftStatus}><i /> Draft saved</span>
           </div>
-          <button className={styles.profileButton} onClick={() => navigate('/account')}>Profile</button>
+          <FeedbackButton
+            context={{
+              section: `generator-step-${step}`,
+              metadata: { setName: formData.setName, prepLevel: activePrepLevel },
+            }}
+          />
+          <ProfileButton />
         </div>
       </header>
 

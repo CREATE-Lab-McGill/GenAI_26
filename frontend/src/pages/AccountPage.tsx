@@ -4,6 +4,7 @@ import { MOCK_PROFILE } from '../services/mockData';
 import type { GeneratedSet } from '../types/problem';
 import { getSets, deleteSet } from '../api/client';
 import styles from '../styles/AccountPageStyles.module.css';
+import FeedbackButton from '../components/Feedback';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 const DEFAULTS_KEY = 'mathcraft_generator_defaults';
@@ -176,9 +177,12 @@ const Account = (): React.ReactElement => {
           <span className={styles.brandMark}>M</span>
           <span>MathCraft</span>
         </a>
-        <button className={styles.backButton} onClick={() => navigate('/dashboard')}>
-          <span aria-hidden="true">←</span> Back to dashboard
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <FeedbackButton />
+          <button className={styles.backButton} onClick={() => navigate('/dashboard')}>
+            <span aria-hidden="true">←</span> Back to dashboard
+          </button>
+        </div>
       </header>
 
       <div className={styles.shell}>

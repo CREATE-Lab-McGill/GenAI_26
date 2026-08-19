@@ -2,8 +2,8 @@ import uuid
 from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import ProblemSet, Question
-from .serializers import ProblemSetSerializer, QuestionSerializer
+from .models import ProblemSet, Question, Feedback
+from .serializers import ProblemSetSerializer, QuestionSerializer, FeedbackSerializer
 from .services.llm import generate_math_problems, edit_single_math_problem, edit_full_math_set
 
 @api_view(["GET"])
@@ -129,3 +129,16 @@ def delete_question(request, pk):
 
     question.delete()
     return Response(status=204)
+
+@api_view(["POST"])
+def submit_feedback(request):
+    data = request.data
+    feedback = Feedback.objects.create(
+        id=str(uuid.uuid4()),
+        message=data.get("message", ""),
+        rating=data.get("rating"),
+        page=data.get("page", ""),
+        section=data.get("section"),
+        metadata=data.get("metadata", {}),
+    )
+    return Response(FeedbackSerializer(feedback).data, status=201)

@@ -4,6 +4,8 @@ import { MOCK_PROFILE } from '../services/mockData';
 import type { PrepLevel, GeneratedSet } from '../types/problem';
 import { getSets } from '../api/client';
 import styles from '../styles/DashboardPageStyles.module.css';
+import FeedbackButton from '../components/Feedback';
+import ProfileButton from '../components/Profile';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 
@@ -109,13 +111,10 @@ const Dashboard = (): React.ReactElement => {
           <span className={styles.brandMark}>M</span>
           <span>MathCraft</span>
         </a>
-        <button className={styles.profileButton} onClick={() => navigate('/account')}>
-          <span className={styles.profileAvatar}>{profile.name.split(' ').map((n) => n[0]).join('')}</span>
-          <span className={styles.profileCopy}>
-            <strong>{profile.name}</strong>
-            <small>{profile.school}</small>
-          </span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <FeedbackButton />
+          <ProfileButton variant="full" name={profile.name} subtitle={profile.school} />
+        </div>
       </header>
 
       <section className={styles.hero}>

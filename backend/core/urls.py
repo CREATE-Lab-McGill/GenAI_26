@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from api.views import (
     health_check, get_sets, generate_set,
-    edit_question, edit_set, save_set, delete_set, delete_question,
+    edit_question, edit_set, save_set, delete_set, delete_question, submit_feedback,
 )
 
 urlpatterns = [
@@ -31,4 +31,5 @@ urlpatterns = [
     path("api/sets/<str:pk>/edit/", edit_set),
     path("api/sets/<str:pk>/save/", save_set),
     path("api/sets/<str:pk>/", delete_set),
+    path("api/feedback/", submit_feedback),
 ]

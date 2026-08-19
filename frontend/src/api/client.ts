@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { GeneratorFormData } from "../types/problem";
+import type { FeedbackPayload, FeedbackEntry } from "../types/feedback";
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api/`,
@@ -43,5 +44,13 @@ export const deleteSet = async (id: string) => {
 
 export const deleteQuestion = async (id: string) => {
   const response = await api.delete(`questions/${id}/`);
+  return response.data;
+};
+
+export const submitFeedback = async (payload: FeedbackPayload): Promise<FeedbackEntry> => {
+  const response = await api.post("feedback/", {
+    ...payload,
+    page: window.location.pathname,
+  });
   return response.data;
 };
