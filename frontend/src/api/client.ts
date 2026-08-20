@@ -54,3 +54,8 @@ export const submitFeedback = async (payload: FeedbackPayload): Promise<Feedback
   });
   return response.data;
 };
+
+export const updateQuestionManual = async (id: string, prompt: string, resyncAnswer: boolean) => {
+  const response = await api.post(`questions/${id}/manual/`, { prompt, resyncAnswer });
+  return response.data;
+};
