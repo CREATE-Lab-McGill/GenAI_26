@@ -52,7 +52,6 @@ const ProblemOutput = (): React.ReactElement => {
   const [aiEditingId, setAiEditingId] = useState<string | null>(null);
   const [aiPromptText, setAiPromptText] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [savingMode, setSavingMode] = useState<'text' | 'resync' | null>(null);
 
   const [globalPrompt, setGlobalPrompt] = useState('');
