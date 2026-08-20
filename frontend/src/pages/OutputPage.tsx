@@ -13,7 +13,7 @@ import type {
   OutputInclude,
   DisplayOption,
 } from '../types/problem';
-import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion } from '../api/client';
+import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual } from '../api/client';
 import styles from '../styles/OutputPageStyles.module.css';
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -52,6 +52,7 @@ const ProblemOutput = (): React.ReactElement => {
   const [aiEditingId, setAiEditingId] = useState<string | null>(null);
   const [aiPromptText, setAiPromptText] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [savingMode, setSavingMode] = useState<'text' | 'resync' | null>(null);
 
   const [globalPrompt, setGlobalPrompt] = useState('');
   const [isGlobalEditing, setIsGlobalEditing] = useState(false);
@@ -134,10 +135,18 @@ const ProblemOutput = (): React.ReactElement => {
     setShowMathBuilder(false);
   };
 
-  const saveEdit = (id: string) => {
-    const updatedQuestions = questions.map((q) => (q.id === id ? { ...q, prompt: draftText } : q));
-    updateLocalStorage({ ...set, questions: updatedQuestions });
-    setEditingId(null);
+  const saveEdit = async (id: string, resyncAnswer: boolean) => {
+    setSavingMode(resyncAnswer ? 'resync' : 'text');
+    try {
+      const updated = await updateQuestionManual(id, draftText, resyncAnswer);
+      const updatedQuestions = questions.map((q) => (q.id === id ? { ...q, ...updated } : q));
+      updateLocalStorage({ ...set, questions: updatedQuestions });
+      setEditingId(null);
+    } catch (error) {
+      console.error("Failed to save manual edit:", error);
+    } finally {
+      setSavingMode(null);
+    }
   };
 
   const startAiEdit = (q: GeneratedQuestion) => {
@@ -397,8 +406,15 @@ const ProblemOutput = (): React.ReactElement => {
                     </div>
 
                     <div className={styles.editActions}>
-                      <button className={styles.secondaryButton} onClick={() => setEditingId(null)}>Cancel</button>
-                      <button className={styles.primaryButton} onClick={() => saveEdit(q.id)}>Save changes</button>
+                      <button className={styles.secondaryButton} onClick={() => setEditingId(null)} disabled={!!savingMode}>
+                        Cancel
+                      </button>
+                      <button className={styles.secondaryButton} onClick={() => saveEdit(q.id, false)} disabled={!!savingMode}>
+                        {savingMode === 'text' ? 'Saving...' : 'Save text only'}
+                      </button>
+                      <button className={styles.primaryButton} onClick={() => saveEdit(q.id, true)} disabled={!!savingMode}>
+                        {savingMode === 'resync' ? 'Updating...' : 'Save & update'}
+                      </button>
                     </div>
                   </div>
                 ) : aiEditingId === q.id ? (

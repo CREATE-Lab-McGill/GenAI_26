@@ -48,6 +48,10 @@ class EditedQuestionWithId(BaseModel):
 class EditedQuestionSet(BaseModel):
     questions: List[EditedQuestionWithId]
 
+class ResyncedQuestion(BaseModel):
+    answer: str
+    solution: str
+    hint: str
 
 LATEX_INSTRUCTIONS = """
 CRITICAL INSTRUCTIONS FOR FORMATTING AND LATEX (APPLIES TO ALL JSON FIELDS: prompt, answer, solution, hint):
@@ -370,3 +374,30 @@ def edit_full_math_set(questions_list, edit_instruction):
     data = result.model_dump()
     data["questions"] = [sanitize_question_fields(q) for q in data["questions"]]
     return data
+
+
+def resync_answer_to_prompt(question_data: dict) -> dict:
+    prompt = f"""
+    A teacher manually edited the prompt of this math question. The prompt below
+    is now the SOURCE OF TRUTH and must NOT be changed. Recalculate the answer,
+    solution, and hint so they are mathematically correct for this exact prompt.
+
+    FINAL PROMPT (do not modify): {question_data.get('prompt')}
+
+    OLD ANSWER (may now be wrong, for reference only): {question_data.get('answer')}
+    OLD SOLUTION (may now be wrong, for reference only): {question_data.get('solution')}
+
+    {LATEX_INSTRUCTIONS}
+    """
+
+    response = client.models.generate_content(
+        model="gemini-3.6-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.2,
+            response_mime_type="application/json",
+            response_schema=ResyncedQuestion,
+        )
+    )
+    result: ResyncedQuestion = response.parsed
+    return sanitize_question_fields(result.model_dump())

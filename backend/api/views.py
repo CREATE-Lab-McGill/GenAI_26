@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import ProblemSet, Question, Feedback
 from .serializers import ProblemSetSerializer, QuestionSerializer, FeedbackSerializer
-from .services.llm import generate_math_problems, edit_single_math_problem, edit_full_math_set
+from .services.llm import generate_math_problems, edit_single_math_problem, edit_full_math_set, resync_answer_to_prompt
 
 @api_view(["GET"])
 def health_check(request):
@@ -142,3 +142,25 @@ def submit_feedback(request):
         metadata=data.get("metadata", {}),
     )
     return Response(FeedbackSerializer(feedback).data, status=201)
+
+@api_view(["POST"])
+def update_question_manual(request, pk):
+    try:
+        question = Question.objects.get(pk=pk)
+        new_prompt = request.data.get("prompt")
+        resync = request.data.get("resyncAnswer", False)
+
+        question.prompt = new_prompt
+
+        if resync:
+            q_data = QuestionSerializer(question).data
+            q_data["prompt"] = new_prompt
+            resynced = resync_answer_to_prompt(q_data)
+            question.answer = resynced.get("answer", question.answer)
+            question.solution = resynced.get("solution", question.solution)
+            question.hint = resynced.get("hint", question.hint)
+
+        question.save()
+        return Response(QuestionSerializer(question).data)
+    except Question.DoesNotExist:
+        return Response({"error": "Question not found"}, status=404)
