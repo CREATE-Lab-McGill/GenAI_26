@@ -1036,3 +1036,15 @@
   background: var(--border-soft);
   margin: 4px 2px;
 }
+
+.sidebarControl:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--ink-faint);
+}
+
+.sidebarControl:disabled:hover {
+  border-color: var(--border-soft);
+  background: var(--cream);
+  color: var(--ink-faint);
+}

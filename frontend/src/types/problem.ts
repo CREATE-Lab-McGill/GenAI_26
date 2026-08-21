@@ -43,7 +43,6 @@ export const SCAFFOLDING_LEVELS: ScaffoldingLevel[] = [
   'Skeletal Frame',
 ];
 
-// NUEVO: Interfaz para los bloques dinámicos
 export interface QuestionGroup {
   id: string;
   count: number;
@@ -84,7 +83,6 @@ export interface GeneratorFormData {
   scaffolding: ScaffoldingLevel[];
   customRules: string;
   
-  // Usamos grupos dinámicos en lugar de formatos fijos
   questionGroups: QuestionGroup[];
 
   outputIncludes: OutputInclude[];
@@ -104,7 +102,6 @@ export const initialGeneratorForm: GeneratorFormData = {
   scaffolding: ['Hints'],
   customRules: '',
   
-  // Empezamos con 1 bloque por defecto
   questionGroups: [
     { id: 'group_init_1', count: 5, format: 'Word Problem', difficulty: 'Medium' }
   ],
