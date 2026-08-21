@@ -59,3 +59,8 @@ export const updateQuestionManual = async (id: string, prompt: string, resyncAns
   const response = await api.post(`questions/${id}/manual/`, { prompt, resyncAnswer });
   return response.data;
 };
+
+export const generateAlternativeQuestion = async (id: string) => {
+  const response = await api.post(`questions/${id}/alternative/`);
+  return response.data;
+};

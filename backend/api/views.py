@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import ProblemSet, Question, Feedback
 from .serializers import ProblemSetSerializer, QuestionSerializer, FeedbackSerializer
-from .services.llm import generate_math_problems, edit_single_math_problem, edit_full_math_set, resync_answer_to_prompt
+from .services.llm import generate_math_problems, edit_single_math_problem, edit_full_math_set, resync_answer_to_prompt, generate_alternative_question
 
 @api_view(["GET"])
 def health_check(request):
@@ -164,3 +164,23 @@ def update_question_manual(request, pk):
         return Response(QuestionSerializer(question).data)
     except Question.DoesNotExist:
         return Response({"error": "Question not found"}, status=404)
+
+@api_view(["POST"])
+def question_alternative(request, pk):
+    try:
+        question = Question.objects.get(pk=pk)
+        q_data = QuestionSerializer(question).data
+        alt = generate_alternative_question(q_data)
+
+        question.prompt = alt.get("prompt", question.prompt)
+        question.answer = alt.get("answer", question.answer)
+        question.solution = alt.get("solution", question.solution)
+        question.hint = alt.get("hint", question.hint)
+        question.save()
+
+        return Response(QuestionSerializer(question).data)
+    except Question.DoesNotExist:
+        return Response({"error": "Question not found"}, status=404)
+    except Exception as e:
+        print("ERROR IN QUESTION_ALTERNATIVE:", str(e))
+        return Response({"error": str(e)}, status=500)

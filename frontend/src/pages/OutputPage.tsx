@@ -3,17 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import TagBadge from '../components/TagBadge';
 import FeedbackButton from '../components/Feedback';
 import ProfileButton from '../components/Profile';
-import { generateMockQuestion } from '../services/mockData';
 import type {
   GeneratedQuestion,
   GeneratedSet,
-  PrepLevel,
-  ProblemFormat,
-  Difficulty,
   OutputInclude,
   DisplayOption,
 } from '../types/problem';
-import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual } from '../api/client';
+import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion } from '../api/client';
 import styles from '../styles/OutputPageStyles.module.css';
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -69,6 +65,8 @@ const ProblemOutput = (): React.ReactElement => {
   const [printMode, setPrintMode] = useState<PrintMode>('student');
   const [showSetMenu, setShowSetMenu] = useState(false);
   const setMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const [altLoadingId, setAltLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(LAST_SET_KEY);
@@ -190,15 +188,17 @@ const ProblemOutput = (): React.ReactElement => {
     }
   };
 
-  const moreLikeThis = (q: GeneratedQuestion) => {
-    const replacement = generateMockQuestion(
-      q.topic || set.topic,
-      (q.format as ProblemFormat) || 'Word Problem',
-      (q.difficulty as Difficulty) || 'Medium',
-      (q.prepLevel as PrepLevel) || set.prepLevel,
-      q.topic || set.topic
-    );
-    setQuestions((prev) => prev.map((item) => (item.id === q.id ? replacement : item)));
+  const moreLikeThis = async (q: GeneratedQuestion) => {
+    setAltLoadingId(q.id);
+    try {
+      const updatedQuestion = await generateAlternativeQuestion(q.id);
+      const updatedQuestions = questions.map((item) => (item.id === q.id ? { ...item, ...updatedQuestion } : item));
+      updateLocalStorage({ ...set, questions: updatedQuestions });
+    } catch (error) {
+      console.error("Failed to generate alternative question:", error);
+    } finally {
+      setAltLoadingId(null);
+    }
   };
 
   const confirmDelete = async () => {
@@ -518,8 +518,12 @@ const ProblemOutput = (): React.ReactElement => {
                 <button className={styles.sidebarControl} onClick={() => startEdit(q)}>
                   Edit text
                 </button>
-                <button className={styles.sidebarControl} onClick={() => moreLikeThis(q)}>
-                  Alternative
+                <button
+                  className={styles.sidebarControl}
+                  onClick={() => moreLikeThis(q)}
+                  disabled={altLoadingId === q.id}
+                >
+                  {altLoadingId === q.id ? 'Generating...' : 'Alternative'}
                 </button>
                 <button className={`${styles.sidebarControl} ${styles.deleteBtn}`} onClick={() => setPendingDelete(q)}>
                   Delete

@@ -53,6 +53,12 @@ class ResyncedQuestion(BaseModel):
     solution: str
     hint: str
 
+class AlternativeQuestion(BaseModel):
+    prompt: str
+    answer: str
+    solution: str
+    hint: str
+
 LATEX_INSTRUCTIONS = """
 CRITICAL INSTRUCTIONS FOR FORMATTING AND LATEX (APPLIES TO ALL JSON FIELDS: prompt, answer, solution, hint):
 1. LATEX COMMANDS ONLY — DOUBLE-ESCAPE BACKSLASHES: For LaTeX commands 
@@ -401,3 +407,54 @@ def resync_answer_to_prompt(question_data: dict) -> dict:
     )
     result: ResyncedQuestion = response.parsed
     return sanitize_question_fields(result.model_dump())
+
+def generate_alternative_question(question_data: dict) -> dict:
+    prompt = f"""
+    Generate a NEW, DIFFERENT math problem that practices the SAME skill as the
+    question below. Do NOT reuse the same numbers, names, or context — write a
+    substantially different problem, not a reworded copy.
+
+    ORIGINAL QUESTION (for reference only, do not repeat or lightly rephrase it):
+    Prompt: {question_data.get('prompt')}
+
+    PARAMETERS TO MATCH:
+    - Topic: {question_data.get('topic')}
+    - Subtopic: {question_data.get('subtopic')}
+    - Format: {question_data.get('format')}
+    - Difficulty: {question_data.get('difficulty')}
+    - Preparation level: {question_data.get('prepLevel')}
+
+    {LATEX_INSTRUCTIONS}
+    """
+
+    response = client.models.generate_content(
+        model="gemini-3.6-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.6,
+            response_mime_type="application/json",
+            response_schema=AlternativeQuestion,
+        )
+    )
+
+    result: AlternativeQuestion = response.parsed
+    alt = sanitize_question_fields(result.model_dump())
+
+    alt_as_question = {**alt, "format": question_data.get("format", "Word Problem")}
+    attempts = 0
+    while needs_regeneration(alt_as_question) and attempts < MAX_REGENERATION_ATTEMPTS:
+        response = client.models.generate_content(
+            model="gemini-3.6-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.6,
+                response_mime_type="application/json",
+                response_schema=AlternativeQuestion,
+            )
+        )
+        result = response.parsed
+        alt = sanitize_question_fields(result.model_dump())
+        alt_as_question = {**alt, "format": question_data.get("format", "Word Problem")}
+        attempts += 1
+
+    return alt
