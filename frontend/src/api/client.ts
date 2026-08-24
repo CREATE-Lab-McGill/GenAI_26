@@ -64,3 +64,14 @@ export const generateAlternativeQuestion = async (id: string) => {
   const response = await api.post(`questions/${id}/alternative/`);
   return response.data;
 };
+
+export const exportWordDocument = async (data: {
+  name: string;
+  questions: any[];
+  mode: 'student' | 'teacher';
+}) => {
+  const response = await api.post("export-word/", data, {
+    responseType: 'blob',
+  });
+  return response.data;
+};

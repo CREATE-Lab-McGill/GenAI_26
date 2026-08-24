@@ -9,7 +9,7 @@ import type {
   OutputInclude,
   DisplayOption,
 } from '../types/problem';
-import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion } from '../api/client';
+import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument } from '../api/client';
 import styles from '../styles/OutputPageStyles.module.css';
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -254,29 +254,16 @@ const ProblemOutput = (): React.ReactElement => {
 
   const handleExportWord = async (mode: PrintMode) => {
     try {
-      const apiUrl = 'http://localhost:8000/api/export-word/';
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: set!.name || set!.topic || 'Untitled set',
-          questions: questions,
-          mode: mode
-        }),
+      const blob = await exportWordDocument({
+        name: set!.name || set!.topic || 'Untitled set',
+        questions: questions,
+        mode: mode
       });
 
-      if (!response.ok) {
-        throw new Error('Document generation failed.');
-      }
-
-      const blob = await response.blob();
       saveAs(blob, `${set!.name || 'problem-set'}-${mode}.docx`);
 
     } catch (error) {
-      console.error("Error exporting:", error);
+      console.error("Error al exportar:", error);
       alert("There was a problem generating the Word file. Please try again.");
     }
   };
