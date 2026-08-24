@@ -1,0 +1,421 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+.overlay {
+  --teal-deep: #21897e;
+  --teal-mid: #3ba99c;
+  --cream: #f8f7f3;
+  --sky: #7ebce6;
+  --violet: #8980f5;
+  --ink: #16302c;
+  --ink-soft: #4d6460;
+  --ink-faint: #7c918d;
+  --paper: #ffffff;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 48, 44, 0.6);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 300;
+  padding: 20px;
+  animation: fadeIn 0.25s var(--ease);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.card {
+  position: relative;
+  width: 440px;
+  max-width: 100%;
+  background: var(--paper);
+  background-image:
+    radial-gradient(circle at 100% 0%, rgba(137, 128, 245, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 0% 100%, rgba(126, 188, 230, 0.1) 0%, transparent 45%);
+  border: 1px solid rgba(33, 137, 126, 0.14);
+  border-radius: 28px;
+  padding: 40px 36px 30px;
+  box-shadow: 0 30px 70px rgba(22, 48, 44, 0.28);
+  font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+  text-align: center;
+  animation: rise 0.35s var(--ease);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.closeBtn {
+  position: absolute;
+  top: 15px;
+  right: 9px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(22, 48, 44, 0.05);
+  color: var(--ink-faint);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.closeBtn:hover {
+  background: rgba(22, 48, 44, 0.09);
+  color: var(--ink);
+  transform: rotate(90deg);
+}
+
+.iconBadge {
+  margin: 0 auto 20px;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--teal-deep), var(--teal-mid));
+  color: var(--paper);
+  box-shadow: 0 12px 24px rgba(33, 137, 126, 0.28);
+  transition: transform 0.3s var(--ease);
+}
+
+.iconBadge svg {
+  width: 28px;
+  height: 28px;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
+  background: rgba(33, 137, 126, 0.1);
+  border: 1px solid rgba(33, 137, 126, 0.2);
+  padding: 5px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+
+.title {
+  font-family: 'Fraunces', 'Iowan Old Style', serif;
+  font-size: 23px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 8px !important;
+  letter-spacing: -0.01em;
+}
+
+.body {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  margin: 0 0 26px;
+  padding: 0 4px;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 23px;
+  margin-top: 10px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(33, 137, 126, 0.18);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.25s var(--ease);
+}
+
+.dot:hover {
+  background: rgba(33, 137, 126, 0.4);
+}
+
+.dotActive {
+  background: linear-gradient(135deg, var(--teal-deep), var(--violet));
+  width: 24px;
+  border-radius: 999px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(33, 137, 126, 0.1);
+}
+
+.skipBtn {
+  background: none;
+  border: none;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 8px 6px;
+  transition: color 0.2s var(--ease);
+}
+
+.skipBtn:hover {
+  color: var(--ink-soft);
+  text-decoration: underline;
+}
+
+.navGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.secondaryBtn,
+.primaryBtn {
+  font-family: 'Source Sans 3', sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s var(--ease);
+}
+
+.secondaryBtn {
+  background: transparent;
+  border: 1px solid rgba(33, 137, 126, 0.2);
+  color: var(--ink);
+}
+
+.secondaryBtn:hover {
+  border-color: rgba(33, 137, 126, 0.4);
+  background: rgba(33, 137, 126, 0.06);
+}
+
+.primaryBtn {
+  background: linear-gradient(135deg, var(--teal-deep), var(--teal-mid));
+  color: var(--paper);
+  box-shadow: 0 6px 16px rgba(33, 137, 126, 0.28);
+}
+
+.primaryBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(33, 137, 126, 0.34);
+}
+
+.primaryBtn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 32px 24px 24px;
+    border-radius: 22px;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+    gap: 14px;
+  }
+
+  .navGroup {
+    width: 100%;
+  }
+
+  .navGroup .secondaryBtn,
+  .navGroup .primaryBtn {
+    flex: 1;
+  }
+}
+
+.previewFrame {
+  position: relative;
+  width: 100%;
+  height: 128px;
+  border-radius: 18px;
+  background: var(--cream);
+  border: 1px solid rgba(33, 137, 126, 0.16);
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+.previewFrame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: rgba(22, 48, 44, 0.04);
+  border-bottom: 1px solid rgba(33, 137, 126, 0.1);
+}
+
+.previewDots {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  display: flex;
+  gap: 5px;
+}
+
+.previewDots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(22, 48, 44, 0.15);
+}
+
+.previewBody {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.previewTagRow {
+  display: flex;
+  gap: 6px;
+}
+
+.previewTag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.previewTagTeal {
+  background: rgba(33, 137, 126, 0.12);
+  color: var(--teal-deep);
+  border-color: rgba(33, 137, 126, 0.25);
+}
+
+.previewTagSky {
+  background: rgba(126, 188, 230, 0.22);
+  color: #2c6690;
+  border-color: rgba(126, 188, 230, 0.4);
+}
+
+.previewTagViolet {
+  background: rgba(137, 128, 245, 0.16);
+  color: #5d53d6;
+  border-color: rgba(137, 128, 245, 0.32);
+}
+
+.previewBar {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(33, 137, 126, 0.18), rgba(33, 137, 126, 0.05));
+}
+
+.previewRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.previewChip {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--teal-deep), var(--teal-mid));
+}
+
+.previewChipViolet {
+  background: linear-gradient(135deg, var(--violet), var(--sky));
+}
+
+.previewLines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.previewLineSm {
+  height: 6px;
+  width: 70%;
+  border-radius: 999px;
+  background: rgba(22, 48, 44, 0.1);
+}
+
+.previewLineXs {
+  height: 5px;
+  width: 40%;
+  border-radius: 999px;
+  background: rgba(22, 48, 44, 0.06);
+}
+
+.previewAvatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--sky), var(--violet));
+}
+
+.previewCheckRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.previewCheck {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--teal-deep);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 10px;
+}
+
+.previewStepDots {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.previewStepDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(33, 137, 126, 0.18);
+}
+
+.previewStepDotDone {
+  background: var(--teal-mid);
+}
+
+.previewStepDotActive {
+  background: var(--teal-deep);
+  box-shadow: 0 0 0 3px rgba(33, 137, 126, 0.16);
+}
