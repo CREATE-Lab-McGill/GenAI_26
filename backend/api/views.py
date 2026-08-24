@@ -5,6 +5,10 @@ from rest_framework.response import Response
 from .models import ProblemSet, Question, Feedback
 from .serializers import ProblemSetSerializer, QuestionSerializer, FeedbackSerializer
 from .services.llm import generate_math_problems, edit_single_math_problem, edit_full_math_set, resync_answer_to_prompt, generate_alternative_question
+import os
+import tempfile
+import pypandoc
+from django.http import HttpResponse
 
 @api_view(["GET"])
 def health_check(request):
@@ -183,4 +187,49 @@ def question_alternative(request, pk):
         return Response({"error": "Question not found"}, status=404)
     except Exception as e:
         print("ERROR IN QUESTION_ALTERNATIVE:", str(e))
+        return Response({"error": str(e)}, status=500)
+
+@api_view(["POST"])
+def export_word(request):
+    try:
+        data = request.data
+        questions = data.get("questions", [])
+        mode = data.get("mode", "student")
+        set_name = data.get("name", "Untitled Set")
+        
+        md_content = f"# {set_name}\n\n"
+        if mode == 'teacher':
+            md_content += "**Answer Key**\n\n"
+            
+        for i, q in enumerate(questions):
+            md_content += f"### Question {i + 1}\n\n"
+            
+            md_content += f"{q.get('prompt', '')}\n\n"
+            
+            if mode == 'teacher':
+                if q.get('solution'):
+                    md_content += f"**Solution:**\n\n{q.get('solution')}\n\n"
+                if q.get('answer'):
+                    md_content += f"**Final Answer:** {q.get('answer')}\n\n"
+            else:
+                md_content += "---\n\n"
+
+        with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp:
+            docx_path = tmp.name
+            
+        pypandoc.convert_text(md_content, 'docx', format='md', outputfile=docx_path)
+        
+        with open(docx_path, 'rb') as doc_file:
+            response = HttpResponse(
+                doc_file.read(), 
+                content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{set_name}-{mode}.docx"'
+        
+        os.remove(docx_path)
+        
+        return response
+
+    except Exception as e:
+        print("ERROR IN EXPORT_WORD:", str(e))
         return Response({"error": str(e)}, status=500)

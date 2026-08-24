@@ -16,6 +16,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import "mathlive";
+import { saveAs } from 'file-saver';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 
@@ -62,7 +63,7 @@ const ProblemOutput = (): React.ReactElement => {
   const [pendingDelete, setPendingDelete] = useState<GeneratedQuestion | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  const [printMode, setPrintMode] = useState<PrintMode>('student');
+  const [printMode] = useState<PrintMode>('student');
   const [showSetMenu, setShowSetMenu] = useState(false);
   const setMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -251,9 +252,33 @@ const ProblemOutput = (): React.ReactElement => {
     }
   };
 
-  const handlePrint = (mode: PrintMode) => {
-    setPrintMode(mode);
-    setTimeout(() => window.print(), 50);
+  const handleExportWord = async (mode: PrintMode) => {
+    try {
+      const apiUrl = 'http://localhost:8000/api/export-word/';
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: set!.name || set!.topic || 'Untitled set',
+          questions: questions,
+          mode: mode
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Document generation failed.');
+      }
+
+      const blob = await response.blob();
+      saveAs(blob, `${set!.name || 'problem-set'}-${mode}.docx`);
+
+    } catch (error) {
+      console.error("Error exporting:", error);
+      alert("There was a problem generating the Word file. Please try again.");
+    }
   };
 
   const displayOptions = set.formData?.displayOptions || [];
@@ -302,11 +327,11 @@ const ProblemOutput = (): React.ReactElement => {
                     Output settings
                   </button>
                   <div className={styles.menuDivider} />
-                  <button className={styles.menuItem} onClick={() => { handlePrint('student'); setShowSetMenu(false); }}>
-                    Export student sheet
+                  <button className={styles.menuItem} onClick={() => { handleExportWord('student'); setShowSetMenu(false); }}>
+                    Export student sheet (Word)
                   </button>
-                  <button className={styles.menuItem} onClick={() => { handlePrint('teacher'); setShowSetMenu(false); }}>
-                    Export answer key
+                  <button className={styles.menuItem} onClick={() => { handleExportWord('teacher'); setShowSetMenu(false); }}>
+                    Export answer key (Word)
                   </button>
                 </div>
               )}
