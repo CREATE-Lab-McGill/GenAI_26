@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from '../styles/LandingPageStyles.module.css';
+import TutorialModal from '../components/Tutorial';
+import { APP_TOUR_SLIDES } from '../services/tourContent';
 
 interface Step {
   n: string;
@@ -74,6 +76,7 @@ const LandingPage = (): React.ReactElement => {
 
   return (
     <div className={styles.landingPage}>
+      <TutorialModal tourKey="app_intro_v1" slides={APP_TOUR_SLIDES} />
       <header className={styles.landingNav}>
         <Link className={styles.brand} to="/" aria-label="MathCraft home">
           <span className={styles.brandMark}>M</span>
