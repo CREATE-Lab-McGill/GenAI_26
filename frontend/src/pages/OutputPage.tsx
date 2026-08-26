@@ -9,7 +9,7 @@ import type {
   OutputInclude,
   DisplayOption,
 } from '../types/problem';
-import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument } from '../api/client';
+import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument, reorderQuestions } from '../api/client';
 import styles from '../styles/OutputPageStyles.module.css';
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -232,6 +232,12 @@ const ProblemOutput = (): React.ReactElement => {
     updateLocalStorage({ ...set, questions: copy });
     setDragIndex(null);
     setDragOverIndex(null);
+
+    if (set?.id) {
+      reorderQuestions(set.id, copy.map((q) => q.id)).catch((error) => {
+        console.error("Failed to save new order:", error);
+      });
+    }
   };
   const handleDragEnd = () => {
     setDragIndex(null);

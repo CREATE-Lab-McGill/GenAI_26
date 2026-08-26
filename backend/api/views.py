@@ -233,3 +233,20 @@ def export_word(request):
     except Exception as e:
         print("ERROR IN EXPORT_WORD:", str(e))
         return Response({"error": str(e)}, status=500)
+
+
+@api_view(["POST"])
+def reorder_questions(request, pk):
+    try:
+        problem_set = ProblemSet.objects.get(pk=pk)
+        ordered_ids = request.data.get("order", [])
+
+        questions = {q.id: q for q in problem_set.questions.all()}
+        for index, q_id in enumerate(ordered_ids):
+            if q_id in questions:
+                questions[q_id].order = index
+                questions[q_id].save(update_fields=["order"])
+
+        return Response(QuestionSerializer(problem_set.questions.all(), many=True).data)
+    except ProblemSet.DoesNotExist:
+        return Response({"error": "Set not found"}, status=404)

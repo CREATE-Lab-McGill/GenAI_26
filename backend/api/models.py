@@ -21,6 +21,7 @@ class ProblemSet(models.Model):
 class Question(models.Model):
     id = models.CharField(max_length=100, primary_key=True)
     problem_set = models.ForeignKey(ProblemSet, on_delete=models.CASCADE, related_name="questions")
+    order = models.PositiveIntegerField(default=0)
     prompt = models.TextField()
     answer = models.TextField(blank=True)
     solution = models.TextField(blank=True)
@@ -31,6 +32,9 @@ class Question(models.Model):
     subtopic = models.CharField(max_length=255, blank=True, null=True)
     prep_level = models.CharField(max_length=50, blank=True, null=True)
     difficulty = models.CharField(max_length=50, blank=True, null=True)
+
+    class Meta:
+        ordering = ['order']
 
     def __str__(self):
         return self.prompt[:50]
