@@ -19,7 +19,7 @@ interface PrepProfile {
   name: string;
   grade: string;
   curriculum: string;
-  pathways: Pathway[];
+  pathway: Pathway | null;
   classSize: string;
   mathLevel: MathLevel;
   needs: string[];
@@ -42,7 +42,7 @@ const INITIAL_PREP_PROFILES: PrepProfile[] = [
     name: 'Prep 1',
     grade: 'Secondary 4',
     curriculum: 'Quebec (QEP)',
-    pathways: ['TS'],
+    pathway: 'TS',
     classSize: '25–30 students',
     mathLevel: 'Medium',
     needs: ['Struggling learners', 'Advanced learners', 'Language learners', 'IEP / accommodations'],
@@ -52,7 +52,7 @@ const INITIAL_PREP_PROFILES: PrepProfile[] = [
     name: 'Prep 2',
     grade: 'Secondary 4',
     curriculum: 'Quebec (QEP)',
-    pathways: ['CST'],
+    pathway: 'CST',
     classSize: '25–30 students',
     mathLevel: 'Medium',
     needs: [],
@@ -131,7 +131,7 @@ const Account = (): React.ReactElement => {
       name: `Prep ${prepProfiles.length + 1}`,
       grade: GRADES[0],
       curriculum: CURRICULA[0],
-      pathways: [],
+      pathway: null,
       classSize: CLASS_SIZES[3],
       mathLevel: 'Medium',
       needs: [],
@@ -300,18 +300,17 @@ const Account = (): React.ReactElement => {
 
               {(activePrepProfile.grade === 'Secondary 4' || activePrepProfile.grade === 'Secondary 5') && (
                 <div className={styles.field}>
-                  <span className={styles.fieldLabel}>Pathway (Select all that apply)</span>
-                  <div className={styles.checkGrid}>
+                  <span className={styles.fieldLabel}>Pathway</span>
+                  <div className={styles.segmentRow}>
                     {PATHWAYS.map((p) => (
-                      <label key={p.value} className={styles.checkCard}>
-                        <input
-                          type="checkbox"
-                          checked={activePrepProfile.pathways.includes(p.value)}
-                          onChange={() => updateActivePrepProfile({ pathways: toggleInArray(activePrepProfile.pathways, p.value) })}
-                        />
-                        <span className={styles.checkBox}>✓</span>
-                        <span>{p.label}</span>
-                      </label>
+                      <button
+                        key={p.value}
+                        type="button"
+                        className={`${styles.segmentPill} ${activePrepProfile.pathway === p.value ? styles.segmentPillActive : ''}`}
+                        onClick={() => updateActivePrepProfile({ pathway: p.value })}
+                      >
+                        {p.value}
+                      </button>
                     ))}
                   </div>
                 </div>
