@@ -21,68 +21,7 @@ import {
   type QuestionGroup,
 } from '../types/problem';
 import styles from '../styles/GeneratorPageStyles.module.css';
-
-const CURRICULUM_DATA: Record<string, Record<string, string[]>> = {
-  'Sec III': {
-    'Statistics': [
-      'Sampling methods: survey, census, stratified, cluster',
-      'Experimental and theoretical data',
-      'Organizing data: table of condensed data, grouped into classes, histogram, box-and-whisker plot',
-      'Measures of central tendency: mode, median, weighted mean',
-      'Measures of dispersion: range, interquartile range'
-    ],
-    'Probability': [
-      'Continuous or discrete random variable',
-      'Theoretical and experimental probability',
-      'Probability of an event',
-      'Simple arrangement, permutation, combination (based on reasoning, not formulas)',
-      'Geometric probability'
-    ],
-    'Numbers & Algebra': [
-      'Exponential notation',
-      'Scientific notation',
-      'Laws of exponents',
-      'Cube roots and irrational numbers',
-      'Polynomial operations',
-      'Factoring: Finding the common factor',
-      'Solving first-degree equations in one variable',
-      'Inequalities, set notation, interval notation, number line',
-      'Solving inequalities'
-    ],
-    'Relations & Functions': [
-      'Relation, function and inverse of a function',
-      'Independent and dependent variables',
-      'Types of representations (table of values, graph, equation, mapping)',
-      'Properties of functions in context',
-      'Direct, partial, inverse (rational), constant',
-      'Finding the rule of a first degree polynomial function',
-      'Modeling a situation using linear function'
-    ],
-    'Systems of Equations': [
-      'Constructing a system of equations',
-      'Solving a system of equations: by graphing, using a table of values, and comparison method'
-    ],
-    'Area of Solids & Spatial Sense': [
-      'Pythagorean Theorem',
-      'Nets and Area',
-      'SI units and conversion',
-      'Projection and perspective',
-      'Prisms, pyramids, cylinders review',
-      'Right circular cone and sphere',
-      'Decomposable solids',
-      'Lateral area and total area',
-      'Similar figures'
-    ],
-    'Volume of solids': [
-      'Area and volume',
-      'Capacity, SI units, and conversion',
-      'Volume of a right prism and cylinder',
-      'Volume of a right pyramid, cone and sphere',
-      'Volume of a decomposable solid',
-      'Similar solids'
-    ]
-  }
-};
+import { CURRICULUM_DATA } from '../services/curriculumData';
 
 const steps: StepDef[] = [
   { number: 1, title: 'Scope & alignment' },

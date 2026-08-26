@@ -8,7 +8,7 @@ export const MOCK_PROFILE: TeacherProfile = {
   name: 'Temperance Brennan',
   email: 't.brennan@jefferson.edu',
   school: 'Jefferson High School',
-  prepLevels: ['Sec III', 'Sec IV'],
+  prepLevels: ['Sec III', 'Sec IV (CST)', 'Sec IV (TS)', 'Sec IV (SN)'],
   subjects: ['Mathematics', 'Algebra'],
   defaultLanguage: 'English',
   savedDefaults: null,
@@ -104,7 +104,7 @@ export const MOCK_RECENT_ACTIVITY: RecentActivityItem[] = [
     name: 'Slope-intercept practice',
     topic: 'Linear equations',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    prepLevel: 'Sec IV',
+    prepLevel: 'Sec IV (CST)',
     questionCount: 5,
   },
   {
