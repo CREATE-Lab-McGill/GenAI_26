@@ -2,15 +2,23 @@ export type PrepLevel =
   | 'Sec I'
   | 'Sec II'
   | 'Sec III'
-  | 'Sec IV'
-  | 'Sec V';
+  | 'Sec IV (CST)'
+  | 'Sec IV (TS)'
+  | 'Sec IV (SN)'
+  | 'Sec V (CST)'
+  | 'Sec V (TS)'
+  | 'Sec V (SN)';
 
 export const PREP_LEVELS: PrepLevel[] = [
   'Sec I',
   'Sec II',
   'Sec III',
-  'Sec IV',
-  'Sec V',
+  'Sec IV (CST)',
+  'Sec IV (TS)',
+  'Sec IV (SN)',
+  'Sec V (CST)',
+  'Sec V (TS)',
+  'Sec V (SN)',
 ];
 
 export type ProblemFormat = 'Word Problem' | 'Multiple Choice' | 'Short Answer' | 'Situational (SIT)';

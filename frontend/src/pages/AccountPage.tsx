@@ -298,22 +298,24 @@ const Account = (): React.ReactElement => {
                 </label>
               </div>
 
-              <div className={styles.field}>
-                <span className={styles.fieldLabel}>Pathway (Select all that apply)</span>
-                <div className={styles.checkGrid}>
-                  {PATHWAYS.map((p) => (
-                    <label key={p.value} className={styles.checkCard}>
-                      <input
-                        type="checkbox"
-                        checked={activePrepProfile.pathways.includes(p.value)}
-                        onChange={() => updateActivePrepProfile({ pathways: toggleInArray(activePrepProfile.pathways, p.value) })}
-                      />
-                      <span className={styles.checkBox}>✓</span>
-                      <span>{p.label}</span>
-                    </label>
-                  ))}
+              {(activePrepProfile.grade === 'Secondary 4' || activePrepProfile.grade === 'Secondary 5') && (
+                <div className={styles.field}>
+                  <span className={styles.fieldLabel}>Pathway (Select all that apply)</span>
+                  <div className={styles.checkGrid}>
+                    {PATHWAYS.map((p) => (
+                      <label key={p.value} className={styles.checkCard}>
+                        <input
+                          type="checkbox"
+                          checked={activePrepProfile.pathways.includes(p.value)}
+                          onChange={() => updateActivePrepProfile({ pathways: toggleInArray(activePrepProfile.pathways, p.value) })}
+                        />
+                        <span className={styles.checkBox}>✓</span>
+                        <span>{p.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <hr className={styles.divider} />
 
