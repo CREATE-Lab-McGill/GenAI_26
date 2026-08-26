@@ -388,7 +388,7 @@ const Account = (): React.ReactElement => {
                     <li key={item.id} className={styles.listItem}>
                       <span className={styles.listIcon} aria-hidden="true">{activeTab === 'sets' ? icons.bookmark : icons.document}</span>
                       <button className={styles.listItemMain} onClick={() => openSet(item)}>
-                        <strong>{(activeTab === 'sets' ? item.name : null) || item.topic || 'Math problem'}</strong>
+                        <strong>{item.name || item.topic || 'Math problem'}</strong>
                         <span>
                           {activeTab === 'history'
                             ? `${new Date(item.createdAt).toLocaleDateString()} · ${item.prepLevel}`
