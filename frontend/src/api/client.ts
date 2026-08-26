@@ -75,3 +75,8 @@ export const exportWordDocument = async (data: {
   });
   return response.data;
 };
+
+export const reorderQuestions = async (setId: string, orderedIds: string[]) => {
+  const response = await api.post(`sets/${setId}/reorder/`, { order: orderedIds });
+  return response.data;
+};
