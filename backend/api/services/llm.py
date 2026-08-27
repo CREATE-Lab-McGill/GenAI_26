@@ -139,6 +139,7 @@ _MC_OPTION_PATTERN = re.compile(
     re.DOTALL,
 )
 
+_INLINE_FRAC_PATTERN = re.compile(r'(?<!\$)\$(?!\$)([^$]*\\frac[^$]*)\$(?!\$)')
 
 def fix_over_escaped_backslashes(text: str) -> str:
     if not text:
@@ -180,6 +181,11 @@ def has_balanced_dollars(text: str) -> bool:
         return True
     return text.count('$') % 2 == 0
 
+def enforce_display_fractions(text: str) -> str:
+    if not text or '\\frac' not in text:
+        return text
+    return _INLINE_FRAC_PATTERN.sub(lambda m: f'$${m.group(1)}$$', text)
+
 
 def sanitize_question_fields(question: dict) -> dict:
     for field in ("prompt", "answer", "solution", "hint"):
@@ -187,6 +193,7 @@ def sanitize_question_fields(question: dict) -> dict:
             question[field] = fix_over_escaped_backslashes(question[field])
             question[field] = convert_literal_escapes(question[field])
             question[field] = strip_self_correction(question[field])
+            question[field] = enforce_display_fractions(question[field]) 
             question[field] = normalize_whitespace(question[field])
     return question
 
