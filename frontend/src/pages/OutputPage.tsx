@@ -45,6 +45,7 @@ const ProblemOutput = (): React.ReactElement => {
 
   const [showMathBuilder, setShowMathBuilder] = useState(false);
   const mathFieldRef = useRef<any>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [aiEditingId, setAiEditingId] = useState<string | null>(null);
   const [aiPromptText, setAiPromptText] = useState('');
@@ -395,7 +396,24 @@ const ProblemOutput = (): React.ReactElement => {
                             onClick={() => {
                               if (mathFieldRef.current && mathFieldRef.current.value) {
                                 const latex = mathFieldRef.current.value;
-                                setDraftText((prev) => prev + ` $${latex}$ `);
+                                const insertion = ` $${latex}$ `;
+                                const textarea = textareaRef.current;
+
+                                if (textarea) {
+                                  const start = textarea.selectionStart ?? draftText.length;
+                                  const end = textarea.selectionEnd ?? draftText.length;
+                                  const newText = draftText.slice(0, start) + insertion + draftText.slice(end);
+                                  setDraftText(newText);
+
+                                  const cursorPos = start + insertion.length;
+                                  requestAnimationFrame(() => {
+                                    textarea.focus();
+                                    textarea.setSelectionRange(cursorPos, cursorPos);
+                                  });
+                                } else {
+                                  setDraftText((prev) => prev + insertion);
+                                }
+
                                 mathFieldRef.current.value = '';
                               }
                             }}
@@ -408,6 +426,7 @@ const ProblemOutput = (): React.ReactElement => {
 
                     <div className={styles.splitEditor}>
                       <textarea
+                        ref={textareaRef}
                         className={styles.splitTextarea}
                         value={draftText}
                         onChange={(e) => setDraftText(e.target.value)}
