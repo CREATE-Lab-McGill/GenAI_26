@@ -9,7 +9,7 @@ import type {
   OutputInclude,
   DisplayOption,
 } from '../types/problem';
-import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument, reorderQuestions } from '../api/client';
+import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument, reorderQuestions, duplicateSet } from '../api/client';
 import styles from '../styles/OutputPageStyles.module.css';
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -61,6 +61,7 @@ const ProblemOutput = (): React.ReactElement => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [setName, setSetName] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
+  const [duplicateNotice, setDuplicateNotice] = useState('');
   const [pendingDelete, setPendingDelete] = useState<GeneratedQuestion | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
@@ -69,6 +70,9 @@ const ProblemOutput = (): React.ReactElement => {
   const setMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [altLoadingId, setAltLoadingId] = useState<string | null>(null);
+
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateName, setDuplicateName] = useState('');
 
   useEffect(() => {
     const raw = localStorage.getItem(LAST_SET_KEY);
@@ -259,6 +263,19 @@ const ProblemOutput = (): React.ReactElement => {
     }
   };
 
+  const handleDuplicateSet = async () => {
+    try {
+      const newSet = await duplicateSet(set.id, duplicateName);
+      updateLocalStorage(newSet);
+      setShowDuplicateModal(false);
+      setDuplicateName('');
+      setDuplicateNotice('Version created');
+      setTimeout(() => setDuplicateNotice(''), 2200);
+    } catch (error) {
+      console.error("Failed to duplicate set:", error);
+    }
+  };
+
   const handleExportWord = async (mode: PrintMode) => {
     try {
       const blob = await exportWordDocument({
@@ -320,6 +337,9 @@ const ProblemOutput = (): React.ReactElement => {
                   <button className={styles.menuItem} onClick={() => { setShowSettingsModal(true); setShowSetMenu(false); }}>
                     Output settings
                   </button>
+                  <button className={styles.menuItem} onClick={() => { setShowDuplicateModal(true); setShowSetMenu(false); }}>
+                    Save as new version
+                  </button>
                   <div className={styles.menuDivider} />
                   <button className={styles.menuItem} onClick={() => { handleExportWord('student'); setShowSetMenu(false); }}>
                     Export student sheet (Word)
@@ -338,6 +358,7 @@ const ProblemOutput = (): React.ReactElement => {
         </section>
 
         {saveNotice && <p className={styles.saveNotice}>{saveNotice}</p>}
+        {duplicateNotice && <p className={styles.saveNotice}>{duplicateNotice}</p>}
 
         {outputIncludes.includes('Instructions') && (
           <div className={styles.setInstructions}>
@@ -693,6 +714,29 @@ const ProblemOutput = (): React.ReactElement => {
             <div className={styles.modalActions}>
               <button className={styles.secondaryButton} onClick={() => setPendingDelete(null)}>Cancel</button>
               <button className={styles.dangerButton} onClick={confirmDelete}>Delete question</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDuplicateModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowDuplicateModal(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3>Save as new version</h3>
+            <p className={styles.modalBody}>
+              Give this version a name. The original set stays untouched.
+            </p>
+            <input
+              className={styles.modalTextarea}
+              value={duplicateName}
+              onChange={(e) => setDuplicateName(e.target.value)}
+              placeholder="e.g., Harder version"
+            />
+            <div className={styles.modalActions}>
+              <button className={styles.secondaryButton} onClick={() => setShowDuplicateModal(false)}>Cancel</button>
+              <button className={styles.primaryButton} onClick={handleDuplicateSet} disabled={!duplicateName.trim()}>
+                Duplicate
+              </button>
             </div>
           </div>
         </div>

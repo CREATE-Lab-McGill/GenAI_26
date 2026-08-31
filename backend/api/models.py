@@ -11,6 +11,11 @@ class ProblemSet(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     saved_at = models.DateTimeField(blank=True, null=True)
 
+    parent_set = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="versions"
+    )
+    version_label = models.CharField(max_length=100, blank=True, null=True)
+
     class Meta:
         ordering = ['-created_at']
 

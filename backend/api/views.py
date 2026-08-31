@@ -250,3 +250,38 @@ def reorder_questions(request, pk):
         return Response(QuestionSerializer(problem_set.questions.all(), many=True).data)
     except ProblemSet.DoesNotExist:
         return Response({"error": "Set not found"}, status=404)
+
+@api_view(["POST"])
+def duplicate_set(request, pk):
+    try:
+        original = ProblemSet.objects.get(pk=pk)
+    except ProblemSet.DoesNotExist:
+        return Response({"error": "Set not found"}, status=404)
+
+    new_set = ProblemSet.objects.create(
+        id=str(uuid.uuid4()),
+        name=request.data.get("name") or f"{original.topic} (copy)",
+        topic=original.topic,
+        difficulty=original.difficulty,
+        prep_level=original.prep_level,
+        form_data=original.form_data,
+        parent_set=original,
+    )
+
+    for q in original.questions.all():
+        Question.objects.create(
+            id=str(uuid.uuid4()),
+            problem_set=new_set,
+            order=q.order,
+            prompt=q.prompt,
+            answer=q.answer,
+            solution=q.solution,
+            hint=q.hint,
+            format=q.format,
+            topic=q.topic,
+            subtopic=q.subtopic,
+            prep_level=q.prep_level,
+            difficulty=q.difficulty,
+        )
+
+    return Response(ProblemSetSerializer(new_set).data)
