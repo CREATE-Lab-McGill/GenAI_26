@@ -61,7 +61,6 @@ const ProblemOutput = (): React.ReactElement => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [setName, setSetName] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
-  const [duplicateNotice, setDuplicateNotice] = useState('');
   const [pendingDelete, setPendingDelete] = useState<GeneratedQuestion | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
@@ -73,6 +72,7 @@ const ProblemOutput = (): React.ReactElement => {
 
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateName, setDuplicateName] = useState('');
+  const [showVersionBanner, setShowVersionBanner] = useState(true);
 
   useEffect(() => {
     const raw = localStorage.getItem(LAST_SET_KEY);
@@ -266,11 +266,13 @@ const ProblemOutput = (): React.ReactElement => {
   const handleDuplicateSet = async () => {
     try {
       const newSet = await duplicateSet(set.id, duplicateName);
-      updateLocalStorage(newSet);
+      updateLocalStorage({
+        ...newSet,
+        versionOf: set.name || set.topic || 'Untitled set',
+      });
       setShowDuplicateModal(false);
       setDuplicateName('');
-      setDuplicateNotice('Version created');
-      setTimeout(() => setDuplicateNotice(''), 2200);
+      setShowVersionBanner(true);
     } catch (error) {
       console.error("Failed to duplicate set:", error);
     }
@@ -357,8 +359,22 @@ const ProblemOutput = (): React.ReactElement => {
           </div>
         </section>
 
-        {saveNotice && <p className={styles.saveNotice}>{saveNotice}</p>}
-        {duplicateNotice && <p className={styles.saveNotice}>{duplicateNotice}</p>}
+        {saveNotice && <p className={styles.saveNotice}>✓ {saveNotice}</p>}
+        {set.versionOf && showVersionBanner && (
+          <div className={styles.versionBanner}>
+            <div className={styles.versionBannerText}>
+              <strong>You're working on a new version.</strong>
+              <span>Created from "{set.versionOf}" , the original set won't be affected by changes made here.</span>
+            </div>
+            <button
+              className={styles.versionBannerClose}
+              onClick={() => setShowVersionBanner(false)}
+              aria-label="Close banner"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {outputIncludes.includes('Instructions') && (
           <div className={styles.setInstructions}>

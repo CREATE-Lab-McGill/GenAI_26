@@ -144,6 +144,7 @@ export interface GeneratedSet {
   formData: GeneratorFormData;
   questions: GeneratedQuestion[];
   isSaved?: boolean;
+  versionOf?: string;
 }
 
 export interface TeacherProfile {
