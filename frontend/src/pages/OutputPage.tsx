@@ -340,7 +340,7 @@ const ProblemOutput = (): React.ReactElement => {
                     Output settings
                   </button>
                   <button className={styles.menuItem} onClick={() => { setShowDuplicateModal(true); setShowSetMenu(false); }}>
-                    Save as new version
+                    Create similar version
                   </button>
                   <div className={styles.menuDivider} />
                   <button className={styles.menuItem} onClick={() => { handleExportWord('student'); setShowSetMenu(false); }}>
