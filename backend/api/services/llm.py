@@ -245,7 +245,7 @@ PARAMETERS:
 """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -315,7 +315,7 @@ You must strictly match the following quantities, formats, and difficulties:
 """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -347,7 +347,7 @@ def edit_single_math_problem(question_data, edit_instruction):
     """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -374,7 +374,7 @@ def edit_full_math_set(questions_list, edit_instruction):
     """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -404,7 +404,7 @@ def resync_answer_to_prompt(question_data: dict) -> dict:
     """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2,
@@ -435,7 +435,7 @@ def generate_alternative_question(question_data: dict) -> dict:
     """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.6,
@@ -451,7 +451,7 @@ def generate_alternative_question(question_data: dict) -> dict:
     attempts = 0
     while needs_regeneration(alt_as_question) and attempts < MAX_REGENERATION_ATTEMPTS:
         response = client.models.generate_content(
-            model="gemini-3.6-flash",
+            model="gemini-3.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.6,
