@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
+
+from .math_validator import verify_question, verify_questions, needs_math_regeneration
 
 load_dotenv()
 
@@ -24,6 +26,7 @@ class MathQuestion(BaseModel):
     subtopic: str
     prepLevel: str
     difficulty: str
+    verification_expression: Optional[str] = None
 
 
 class MathProblemSet(BaseModel):
@@ -35,6 +38,7 @@ class EditedQuestion(BaseModel):
     answer: str
     solution: str
     hint: str
+    verification_expression: Optional[str] = None
 
 
 class EditedQuestionWithId(BaseModel):
@@ -43,6 +47,7 @@ class EditedQuestionWithId(BaseModel):
     answer: str
     solution: str
     hint: str
+    verification_expression: Optional[str] = None
 
 
 class EditedQuestionSet(BaseModel):
@@ -52,12 +57,14 @@ class ResyncedQuestion(BaseModel):
     answer: str
     solution: str
     hint: str
+    verification_expression: Optional[str] = None
 
 class AlternativeQuestion(BaseModel):
     prompt: str
     answer: str
     solution: str
     hint: str
+    verification_expression: Optional[str] = None
 
 LATEX_INSTRUCTIONS = """
 CRITICAL INSTRUCTIONS FOR FORMATTING AND LATEX (APPLIES TO ALL JSON FIELDS: prompt, answer, solution, hint):
@@ -112,6 +119,20 @@ CRITICAL INSTRUCTIONS FOR FORMATTING AND LATEX (APPLIES TO ALL JSON FIELDS: prom
    immediately rewriting it a second way before simplifying) — compute 
    internally, then write EACH intermediate quantity in your final chosen 
    notation exactly ONCE.
+"""
+
+VERIFICATION_INSTRUCTIONS = """
+ADDITIONAL FIELD — verification_expression (INTERNAL ONLY, never shown to students):
+Populate "verification_expression" with the underlying math in PLAIN notation
+(NO LaTeX, no $, no \\frac) that a symbolic math engine can parse and solve on
+its own — e.g. "2*x + 5 - 13" for "Solve $2x + 5 = 13$", or "3/4 + 1/2" for a
+straight arithmetic computation, or "0.065" / "6500*(1+0.065)**3" for a
+compound-interest style formula. Use "x" as the unknown unless the prompt
+names a specific variable. This expression must be mathematically equivalent
+to what actually produces "answer" — do not simplify it away or hand-wave it.
+If the question has no single computable numeric/symbolic answer (open-ended,
+proof-based, or a multiple-choice question whose options aren't independently
+solvable), set "verification_expression" to null.
 """
 
 MAX_REGENERATION_ATTEMPTS = 2
@@ -215,11 +236,24 @@ def needs_regeneration(question: dict) -> bool:
     return False
 
 
+def needs_any_regeneration(question: dict) -> bool:
+    return needs_regeneration(question) or needs_math_regeneration(question)
+
+
 def sanitize_and_flag(questions: list) -> tuple[list, list]:
     to_regenerate = []
     for i, q in enumerate(questions):
         sanitize_question_fields(q)
         if needs_regeneration(q):
+            to_regenerate.append(i)
+    return questions, to_regenerate
+
+
+def sanitize_verify_and_flag(questions: list) -> tuple[list, list]:
+    questions, to_regenerate = sanitize_and_flag(questions)
+    questions = verify_questions(questions)
+    for i, q in enumerate(questions):
+        if needs_math_regeneration(q) and i not in to_regenerate:
             to_regenerate.append(i)
     return questions, to_regenerate
 
@@ -242,10 +276,11 @@ PARAMETERS:
 - Difficulty: '{group_difficulty}'
 
 {LATEX_INSTRUCTIONS}
+{VERIFICATION_INSTRUCTIONS}
 """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -255,22 +290,30 @@ PARAMETERS:
     )
 
     result: MathQuestion = response.parsed
-    return sanitize_question_fields(result.model_dump())
+    new_q = sanitize_question_fields(result.model_dump())
+    return verify_question(new_q)
 
 
 def _regenerate_flagged_questions(questions: list, topic, prep_level, form_data) -> list:
     attempts = 0
-    to_regenerate = [i for i, q in enumerate(questions) if needs_regeneration(q)]
+    to_regenerate = [i for i, q in enumerate(questions) if needs_any_regeneration(q)]
 
     while to_regenerate and attempts < MAX_REGENERATION_ATTEMPTS:
         for i in to_regenerate:
             old_q = questions[i]
-            new_q = _regenerate_single_question(
-                topic, prep_level,
-                old_q.get("format", "Word Problem"),
-                old_q.get("difficulty", "Medium"),
-                form_data,
-            )
+            verification = old_q.get("verification", {})
+
+            if verification.get("status") == "mismatch" and verification.get("engine"):
+                rewritten = _rewrite_explanation_for_verified_answer(old_q, verification.get("detail"))
+                new_q = {**old_q, **rewritten}
+            else:
+                new_q = _regenerate_single_question(
+                    topic, prep_level,
+                    old_q.get("format", "Word Problem"),
+                    old_q.get("difficulty", "Medium"),
+                    form_data,
+                )
+
             new_q["topic"] = old_q.get("topic", topic)
             new_q["subtopic"] = old_q.get("subtopic", "")
             new_q["prepLevel"] = old_q.get("prepLevel", prep_level)
@@ -278,7 +321,7 @@ def _regenerate_flagged_questions(questions: list, topic, prep_level, form_data)
             new_q["difficulty"] = old_q.get("difficulty", "Medium")
             questions[i] = new_q
 
-        to_regenerate = [i for i, q in enumerate(questions) if needs_regeneration(q)]
+        to_regenerate = [i for i, q in enumerate(questions) if needs_any_regeneration(q)]
         attempts += 1
 
     return questions
@@ -312,10 +355,11 @@ You must strictly match the following quantities, formats, and difficulties:
 {group_instructions}
 
 {LATEX_INSTRUCTIONS}
+{VERIFICATION_INSTRUCTIONS}
 """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -327,7 +371,7 @@ You must strictly match the following quantities, formats, and difficulties:
     result: MathProblemSet = response.parsed
     data = result.model_dump()
 
-    data["questions"], _ = sanitize_and_flag(data["questions"])
+    data["questions"], _ = sanitize_verify_and_flag(data["questions"])
     data["questions"] = _regenerate_flagged_questions(data["questions"], topic, prep_level, form_data)
 
     return data
@@ -344,10 +388,11 @@ def edit_single_math_problem(question_data, edit_instruction):
     Hint: {question_data.get('hint')}
 
     {LATEX_INSTRUCTIONS}
+    {VERIFICATION_INSTRUCTIONS}
     """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -358,6 +403,8 @@ def edit_single_math_problem(question_data, edit_instruction):
 
     result: EditedQuestion = response.parsed
     edited = sanitize_question_fields(result.model_dump())
+    edited["format"] = question_data.get("format", "")
+    edited = verify_question(edited)
     return edited
 
 
@@ -369,12 +416,13 @@ def edit_full_math_set(questions_list, edit_instruction):
     {json.dumps(questions_list)}
 
     {LATEX_INSTRUCTIONS}
+    {VERIFICATION_INSTRUCTIONS}
 
     Keep the exact same "id" for each question as in the original list above.
     """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -385,11 +433,23 @@ def edit_full_math_set(questions_list, edit_instruction):
 
     result: EditedQuestionSet = response.parsed
     data = result.model_dump()
-    data["questions"] = [sanitize_question_fields(q) for q in data["questions"]]
+
+    original_by_id = {q.get("id"): q for q in questions_list}
+    edited_questions = []
+    for q in data["questions"]:
+        q = sanitize_question_fields(q)
+        original = original_by_id.get(q.get("id"), {})
+        q["format"] = original.get("format", "")
+        q = verify_question(q)
+        edited_questions.append(q)
+
+    data["questions"] = edited_questions
     return data
 
 
 def resync_answer_to_prompt(question_data: dict) -> dict:
+    fmt = question_data.get("format", "")
+
     prompt = f"""
     A teacher manually edited the prompt of this math question. The prompt below
     is now the SOURCE OF TRUTH and must NOT be changed. Recalculate the answer,
@@ -401,10 +461,11 @@ def resync_answer_to_prompt(question_data: dict) -> dict:
     OLD SOLUTION (may now be wrong, for reference only): {question_data.get('solution')}
 
     {LATEX_INSTRUCTIONS}
+    {VERIFICATION_INSTRUCTIONS}
     """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2,
@@ -413,7 +474,52 @@ def resync_answer_to_prompt(question_data: dict) -> dict:
         )
     )
     result: ResyncedQuestion = response.parsed
-    return sanitize_question_fields(result.model_dump())
+    resynced = sanitize_question_fields(result.model_dump())
+    resynced["format"] = fmt
+    
+    resynced = verify_question(resynced)
+
+    verification = resynced.get("verification", {})
+    if verification.get("status") == "mismatch" and verification.get("engine"):
+        verified_value = verification.get("detail")
+
+        followup_prompt = f"""
+        An independent mathematical engine has OVERRIDDEN the previous answer.
+        The ABSOLUTE CORRECT ANSWER is: {verified_value}
+
+        PROMPT (source of truth, do not modify): {question_data.get('prompt')}
+
+        YOUR TASK:
+        Rewrite ONLY the "solution" and "hint" fields so they logically and step-by-step lead to exactly {verified_value}.
+        - Do NOT second-guess this answer.
+        - Do NOT recalculate or point out errors.
+        - Work backwards from {verified_value} if you have to.
+
+        {LATEX_INSTRUCTIONS}
+        {VERIFICATION_INSTRUCTIONS}
+        """
+
+        retry_response = client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=followup_prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                response_mime_type="application/json",
+                response_schema=ResyncedQuestion,
+            )
+        )
+        retry_result: ResyncedQuestion = retry_response.parsed
+        resynced = sanitize_question_fields(retry_result.model_dump())
+        resynced["format"] = fmt
+        
+        resynced["answer"] = str(verified_value)
+        resynced["verification"] = {
+            "status": "verified",
+            "engine": "engine-auto-corrected", 
+            "detail": str(verified_value)
+        }
+
+    return resynced
 
 def generate_alternative_question(question_data: dict) -> dict:
     prompt = f"""
@@ -432,10 +538,11 @@ def generate_alternative_question(question_data: dict) -> dict:
     - Preparation level: {question_data.get('prepLevel')}
 
     {LATEX_INSTRUCTIONS}
+    {VERIFICATION_INSTRUCTIONS}
     """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.6,
@@ -448,10 +555,12 @@ def generate_alternative_question(question_data: dict) -> dict:
     alt = sanitize_question_fields(result.model_dump())
 
     alt_as_question = {**alt, "format": question_data.get("format", "Word Problem")}
+    alt_as_question = verify_question(alt_as_question)
+
     attempts = 0
-    while needs_regeneration(alt_as_question) and attempts < MAX_REGENERATION_ATTEMPTS:
+    while needs_any_regeneration(alt_as_question) and attempts < MAX_REGENERATION_ATTEMPTS:
         response = client.models.generate_content(
-            model="gemini-3.6-flash",
+            model="gemini-3.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.6,
@@ -462,6 +571,49 @@ def generate_alternative_question(question_data: dict) -> dict:
         result = response.parsed
         alt = sanitize_question_fields(result.model_dump())
         alt_as_question = {**alt, "format": question_data.get("format", "Word Problem")}
+        alt_as_question = verify_question(alt_as_question)
         attempts += 1
 
-    return alt
+    return alt_as_question
+
+def _rewrite_explanation_for_verified_answer(question_data: dict, verified_value: str) -> dict:
+    fmt = question_data.get("format", "")
+
+    prompt = f"""
+    An independent mathematical engine has OVERRIDDEN the previous answer.
+    The ABSOLUTE CORRECT ANSWER is: {verified_value}
+
+    PROMPT (do not modify): {question_data.get('prompt')}
+
+    YOUR TASK:
+    Rewrite ONLY the "solution" and "hint" fields so they logically and step-by-step lead to exactly {verified_value}. 
+    - Do NOT second-guess this answer.
+    - Do NOT recalculate or point out errors. 
+    - Work backwards from {verified_value} if you have to.
+
+    {LATEX_INSTRUCTIONS}
+    {VERIFICATION_INSTRUCTIONS}
+    """
+
+    response = client.models.generate_content(
+        model="gemini-3.5-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.2,
+            response_mime_type="application/json",
+            response_schema=ResyncedQuestion,
+        )
+    )
+    result: ResyncedQuestion = response.parsed
+    rewritten = sanitize_question_fields(result.model_dump())
+    rewritten["format"] = fmt
+    
+    rewritten["answer"] = str(verified_value)
+    
+    rewritten["verification"] = {
+        "status": "verified",
+        "engine": "engine-auto-corrected", 
+        "detail": str(verified_value)
+    }
+
+    return rewritten
