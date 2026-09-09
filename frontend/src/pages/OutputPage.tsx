@@ -29,6 +29,14 @@ const STUDENT_DISPLAY_OPTIONS: DisplayOption[] = [
   'Difficulty tag',
 ];
 
+const QUESTION_INCLUDE_OPTIONS: OutputInclude[] = ['Hints', 'Scratch space'];
+const QUESTION_DISPLAY_OPTIONS: DisplayOption[] = [
+  'Answer space',
+  'Extra room for solution',
+  'Graph / diagram space',
+  'Difficulty tag',
+];
+
 function toggleInArray<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
@@ -74,6 +82,9 @@ const ProblemOutput = (): React.ReactElement => {
   const [duplicateName, setDuplicateName] = useState('');
   const [showVersionBanner, setShowVersionBanner] = useState(true);
 
+  const [settingsQuestionId, setSettingsQuestionId] = useState<string | null>(null);
+  const questionSettingsRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const raw = localStorage.getItem(LAST_SET_KEY);
     if (raw) {
@@ -88,6 +99,20 @@ const ProblemOutput = (): React.ReactElement => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (setMenuRef.current && !setMenuRef.current.contains(e.target as Node)) {
         setShowSetMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (questionSettingsRef.current && !questionSettingsRef.current.contains(e.target as Node)) {
+        setSettingsQuestionId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -118,6 +143,79 @@ const ProblemOutput = (): React.ReactElement => {
       ...set!,
       formData: { ...set!.formData, displayOptions: toggleInArray(current, option) }
     });
+  };
+
+  const getEffectiveIncludes = (q: GeneratedQuestion, setIncludes: OutputInclude[]): OutputInclude[] =>
+    q.outputOverrides?.outputIncludes ?? setIncludes;
+
+  const getEffectiveDisplay = (q: GeneratedQuestion, setDisplay: DisplayOption[]): DisplayOption[] =>
+    q.outputOverrides?.displayOptions ?? setDisplay;
+
+  const hasCustomSettings = (q: GeneratedQuestion): boolean =>
+    !!q.outputOverrides?.outputIncludes || !!q.outputOverrides?.displayOptions;
+
+  const arraysEqualUnordered = <T,>(a: T[], b: T[]): boolean => {
+    if (a.length !== b.length) return false;
+    const setA = new Set(a);
+    return b.every((v) => setA.has(v));
+  };
+
+  const toggleQuestionInclude = (q: GeneratedQuestion, option: OutputInclude, setIncludes: OutputInclude[]) => {
+    if (!set) return;
+    const base = q.outputOverrides?.outputIncludes ?? setIncludes;
+    const updated = toggleInArray(base, option);
+    const matchesGlobal = arraysEqualUnordered(updated, setIncludes);
+
+    const updatedQuestions = questions.map((item) => {
+      if (item.id !== q.id) return item;
+
+      const newOverrides = { ...item.outputOverrides };
+      if (matchesGlobal) {
+        delete newOverrides.outputIncludes;
+      } else {
+        newOverrides.outputIncludes = updated;
+      }
+
+      const hasAnyOverride = !!newOverrides.outputIncludes || !!newOverrides.displayOptions;
+      return {
+        ...item,
+        outputOverrides: hasAnyOverride ? newOverrides : undefined,
+      };
+    });
+    updateLocalStorage({ ...set, questions: updatedQuestions });
+  };
+
+  const toggleQuestionDisplay = (q: GeneratedQuestion, option: DisplayOption, setDisplay: DisplayOption[]) => {
+    if (!set) return;
+    const base = q.outputOverrides?.displayOptions ?? setDisplay;
+    const updated = toggleInArray(base, option);
+    const matchesGlobal = arraysEqualUnordered(updated, setDisplay);
+
+    const updatedQuestions = questions.map((item) => {
+      if (item.id !== q.id) return item;
+
+      const newOverrides = { ...item.outputOverrides };
+      if (matchesGlobal) {
+        delete newOverrides.displayOptions;
+      } else {
+        newOverrides.displayOptions = updated;
+      }
+
+      const hasAnyOverride = !!newOverrides.outputIncludes || !!newOverrides.displayOptions;
+      return {
+        ...item,
+        outputOverrides: hasAnyOverride ? newOverrides : undefined,
+      };
+    });
+    updateLocalStorage({ ...set, questions: updatedQuestions });
+  };
+
+  const resetQuestionOverrides = (q: GeneratedQuestion) => {
+    if (!set) return;
+    const updatedQuestions = questions.map((item) =>
+      item.id === q.id ? { ...item, outputOverrides: undefined } : item
+    );
+    updateLocalStorage({ ...set, questions: updatedQuestions });
   };
 
   if (!set) {
@@ -391,220 +489,311 @@ const ProblemOutput = (): React.ReactElement => {
         </div>
 
         <ul className={styles.questionList}>
-          {questions.map((q, index) => (
-            <li
-              key={q.id}
-              className={`${styles.questionCard} ${dragIndex === index ? styles.dragging : ''} ${dragOverIndex === index && dragIndex !== index ? styles.dropTarget : ''}`}
-              draggable
-              onDragStart={() => handleDragStart(index)}
-              onDragEnter={() => handleDragEnter(index)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDrop(index)}
-              onDragEnd={handleDragEnd}
-            >
-              <div className={styles.dragHandle} aria-hidden="true">⠿</div>
+          {questions.map((q, index) => {
+            const effIncludes = getEffectiveIncludes(q, outputIncludes);
+            const effDisplay = getEffectiveDisplay(q, displayOptions);
+            const isCustom = hasCustomSettings(q);
 
-              <div className={styles.questionMain}>
-                <div className={styles.questionTop}>
-                  <span className={styles.questionIndex}>Question {index + 1}</span>
-                </div>
+            return (
+              <li
+                key={q.id}
+                className={`${styles.questionCard} ${dragIndex === index ? styles.dragging : ''} ${dragOverIndex === index && dragIndex !== index ? styles.dropTarget : ''}`}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragEnter={() => handleDragEnter(index)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => handleDrop(index)}
+                onDragEnd={handleDragEnd}
+              >
+                <div className={styles.dragHandle} aria-hidden="true">⠿</div>
 
-                {editingId === q.id ? (
-                  <div className={styles.editArea}>
+                <div className={styles.questionMain}>
+                  <div className={styles.questionTop}>
+                    <span className={styles.questionIndex}>Question {index + 1}</span>
+                  </div>
 
-                    <button
-                      className={styles.builderToggleBtn}
-                      onClick={() => setShowMathBuilder(!showMathBuilder)}
-                    >
-                      {showMathBuilder ? 'Close equation editor' : 'Open equation editor'}
-                    </button>
+                  {editingId === q.id ? (
+                    <div className={styles.editArea}>
 
-                    {showMathBuilder && (
-                      <div className={styles.mathBuilderContainer}>
-                        <span className={styles.builderHint}>Build your equation below and insert it into the text.</span>
-                        <div className={styles.mathBuilderRow}>
-                          {/* @ts-ignore */}
-                          <math-field
-                            ref={mathFieldRef}
-                            className={styles.mathFieldElement}
-                          />
-                          <button
-                            className={styles.insertBtn}
-                            onClick={() => {
-                              if (mathFieldRef.current && mathFieldRef.current.value) {
-                                const latex = mathFieldRef.current.value;
-                                const insertion = ` $${latex}$ `;
-                                const textarea = textareaRef.current;
+                      <button
+                        className={styles.builderToggleBtn}
+                        onClick={() => setShowMathBuilder(!showMathBuilder)}
+                      >
+                        {showMathBuilder ? 'Close equation editor' : 'Open equation editor'}
+                      </button>
 
-                                if (textarea) {
-                                  const start = textarea.selectionStart ?? draftText.length;
-                                  const end = textarea.selectionEnd ?? draftText.length;
-                                  const newText = draftText.slice(0, start) + insertion + draftText.slice(end);
-                                  setDraftText(newText);
+                      {showMathBuilder && (
+                        <div className={styles.mathBuilderContainer}>
+                          <span className={styles.builderHint}>Build your equation below and insert it into the text.</span>
+                          <div className={styles.mathBuilderRow}>
+                            {/* @ts-ignore */}
+                            <math-field
+                              ref={mathFieldRef}
+                              className={styles.mathFieldElement}
+                            />
+                            <button
+                              className={styles.insertBtn}
+                              onClick={() => {
+                                if (mathFieldRef.current && mathFieldRef.current.value) {
+                                  const latex = mathFieldRef.current.value;
+                                  const insertion = ` $${latex}$ `;
+                                  const textarea = textareaRef.current;
 
-                                  const cursorPos = start + insertion.length;
-                                  requestAnimationFrame(() => {
-                                    textarea.focus();
-                                    textarea.setSelectionRange(cursorPos, cursorPos);
-                                  });
-                                } else {
-                                  setDraftText((prev) => prev + insertion);
+                                  if (textarea) {
+                                    const start = textarea.selectionStart ?? draftText.length;
+                                    const end = textarea.selectionEnd ?? draftText.length;
+                                    const newText = draftText.slice(0, start) + insertion + draftText.slice(end);
+                                    setDraftText(newText);
+
+                                    const cursorPos = start + insertion.length;
+                                    requestAnimationFrame(() => {
+                                      textarea.focus();
+                                      textarea.setSelectionRange(cursorPos, cursorPos);
+                                    });
+                                  } else {
+                                    setDraftText((prev) => prev + insertion);
+                                  }
+
+                                  mathFieldRef.current.value = '';
                                 }
+                              }}
+                            >
+                              Insert
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
-                                mathFieldRef.current.value = '';
-                              }
-                            }}
-                          >
-                            Insert
-                          </button>
+                      <div className={styles.splitEditor}>
+                        <textarea
+                          ref={textareaRef}
+                          className={styles.splitTextarea}
+                          value={draftText}
+                          onChange={(e) => setDraftText(e.target.value)}
+                          placeholder="Write your question here..."
+                        />
+                        <div className={styles.livePreviewBox}>
+                          <span className={styles.previewLabel}>Preview</span>
+                          <div className={styles.questionPrompt}>
+                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                              {draftText || '*Start typing to see preview...*'}
+                            </ReactMarkdown>
+                          </div>
                         </div>
                       </div>
-                    )}
 
-                    <div className={styles.splitEditor}>
-                      <textarea
-                        ref={textareaRef}
-                        className={styles.splitTextarea}
-                        value={draftText}
-                        onChange={(e) => setDraftText(e.target.value)}
-                        placeholder="Write your question here..."
-                      />
-                      <div className={styles.livePreviewBox}>
-                        <span className={styles.previewLabel}>Preview</span>
+                      <div className={styles.editActions}>
+                        <button className={styles.secondaryButton} onClick={() => setEditingId(null)} disabled={!!savingMode}>
+                          Cancel
+                        </button>
+                        <button className={styles.secondaryButton} onClick={() => saveEdit(q.id, false)} disabled={!!savingMode}>
+                          {savingMode === 'text' ? 'Saving...' : 'Save text only'}
+                        </button>
+                        <button className={styles.primaryButton} onClick={() => saveEdit(q.id, true)} disabled={!!savingMode}>
+                          {savingMode === 'resync' ? 'Updating...' : 'Save & update'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : aiEditingId === q.id ? (
+                    <div className={styles.editArea}>
+                      <div className={styles.aiEditPreview}>
+                        <span className={styles.previewLabel}>Original</span>
                         <div className={styles.questionPrompt}>
                           <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                            {draftText || '*Start typing to see preview...*'}
+                            {q.prompt}
                           </ReactMarkdown>
                         </div>
                       </div>
-                    </div>
 
-                    <div className={styles.editActions}>
-                      <button className={styles.secondaryButton} onClick={() => setEditingId(null)} disabled={!!savingMode}>
-                        Cancel
-                      </button>
-                      <button className={styles.secondaryButton} onClick={() => saveEdit(q.id, false)} disabled={!!savingMode}>
-                        {savingMode === 'text' ? 'Saving...' : 'Save text only'}
-                      </button>
-                      <button className={styles.primaryButton} onClick={() => saveEdit(q.id, true)} disabled={!!savingMode}>
-                        {savingMode === 'resync' ? 'Updating...' : 'Save & update'}
-                      </button>
+                      <textarea
+                        rows={2}
+                        placeholder="What should the AI change? (e.g., 'Make it multiple choice', 'Change context to soccer')"
+                        value={aiPromptText}
+                        onChange={(e) => setAiPromptText(e.target.value)}
+                      />
+                      <div className={styles.editActions}>
+                        <button className={styles.secondaryButton} onClick={() => setAiEditingId(null)} disabled={isAiLoading}>Cancel</button>
+                        <button className={styles.primaryButton} onClick={() => handleAiEdit(q.id)} disabled={isAiLoading || !aiPromptText.trim()}>
+                          {isAiLoading ? 'Generating...' : 'Generate Update'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ) : aiEditingId === q.id ? (
-                  <div className={styles.editArea}>
-                    <div className={styles.aiEditPreview}>
-                      <span className={styles.previewLabel}>Original</span>
+                  ) : (
+                    <div className={styles.questionContent}>
                       <div className={styles.questionPrompt}>
                         <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                           {q.prompt}
                         </ReactMarkdown>
                       </div>
-                    </div>
 
-                    <textarea
-                      rows={2}
-                      placeholder="What should the AI change? (e.g., 'Make it multiple choice', 'Change context to soccer')"
-                      value={aiPromptText}
-                      onChange={(e) => setAiPromptText(e.target.value)}
-                    />
-                    <div className={styles.editActions}>
-                      <button className={styles.secondaryButton} onClick={() => setAiEditingId(null)} disabled={isAiLoading}>Cancel</button>
-                      <button className={styles.primaryButton} onClick={() => handleAiEdit(q.id)} disabled={isAiLoading || !aiPromptText.trim()}>
-                        {isAiLoading ? 'Generating...' : 'Generate Update'}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.questionContent}>
-                    <div className={styles.questionPrompt}>
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {q.prompt}
-                      </ReactMarkdown>
-                    </div>
+                      {effIncludes.includes('Hints') && q.hint && (
+                        <div className={styles.hintBox}>
+                          <strong>Hint:</strong> <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{q.hint}</ReactMarkdown>
+                        </div>
+                      )}
 
-                    {outputIncludes.includes('Hints') && q.hint && (
-                      <div className={styles.hintBox}>
-                        <strong>Hint:</strong> <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{q.hint}</ReactMarkdown>
-                      </div>
-                    )}
+                      {effDisplay.includes('Graph / diagram space') && (
+                        <div className={styles.graphSpace} />
+                      )}
 
-                    {displayOptions.includes('Graph / diagram space') && (
-                      <div className={styles.graphSpace} />
-                    )}
+                      {(effDisplay.includes('Extra room for solution') || effIncludes.includes('Scratch space')) && (
+                        <div className={styles.scratchSpace}>
+                          {effIncludes.includes('Scratch space') ? 'Scratch Space' : 'Solution Space'}
+                        </div>
+                      )}
 
-                    {(displayOptions.includes('Extra room for solution') || outputIncludes.includes('Scratch space')) && (
-                      <div className={styles.scratchSpace}>
-                        {outputIncludes.includes('Scratch space') ? 'Scratch Space' : 'Solution Space'}
-                      </div>
-                    )}
+                      {effDisplay.includes('Answer space') && (
+                        <div className={styles.answerLine}>
+                          Answer: _________________________________________________
+                        </div>
+                      )}
 
-                    {displayOptions.includes('Answer space') && (
-                      <div className={styles.answerLine}>
-                        Answer: _________________________________________________
-                      </div>
-                    )}
+                      {(effIncludes.includes('Answer key') || effIncludes.includes('Worked solutions')) && (
+                        <div className={styles.teacherKeyBlock}>
+                          <span className={styles.teacherKeyLabel}>Teacher Key Visible</span>
 
-                    {(outputIncludes.includes('Answer key') || outputIncludes.includes('Worked solutions')) && (
-                      <div className={styles.teacherKeyBlock}>
-                        <span className={styles.teacherKeyLabel}>Teacher Key Visible</span>
-
-                        {outputIncludes.includes('Worked solutions') && q.solution && (
-                          <div className={styles.workedSolution}>
-                            <strong>Solution Steps:</strong>
-                            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {q.solution}
-                            </ReactMarkdown>
-                          </div>
-                        )}
-
-                        {outputIncludes.includes('Answer key') && q.answer && (
-                          <div className={styles.finalAnswer}>
-                            <span>Final Answer:</span>
-                            <span>
+                          {effIncludes.includes('Worked solutions') && q.solution && (
+                            <div className={styles.workedSolution}>
+                              <strong>Solution Steps:</strong>
                               <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                {q.answer}
+                                {q.solution}
                               </ReactMarkdown>
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                            </div>
+                          )}
+
+                          {effIncludes.includes('Answer key') && q.answer && (
+                            <div className={styles.finalAnswer}>
+                              <span>Final Answer:</span>
+                              <span>
+                                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                  {q.answer}
+                                </ReactMarkdown>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className={styles.tagRow}>
+                    {q.topic && <TagBadge kind="topic" label={q.topic} />}
+                    {q.subtopic && <TagBadge kind="subtopic" label={q.subtopic} />}
+                    {(q.prepLevel || set.prepLevel) && (
+                      <TagBadge kind="prep" label={q.prepLevel || set.prepLevel} />
+                    )}
+                    {(effDisplay.includes('Difficulty tag') || effDisplay.length === 0) && q.difficulty && (
+                      <TagBadge kind="difficulty" label={q.difficulty} />
+                    )}
+                    {isCustom && (
+                      <TagBadge
+                        kind="custom"
+                        label="Personalized"
+                        onClear={() => resetQuestionOverrides(q)}
+                      />
                     )}
                   </div>
-                )}
-
-                <div className={styles.tagRow}>
-                  {q.topic && <TagBadge kind="topic" label={q.topic} />}
-                  {q.subtopic && <TagBadge kind="subtopic" label={q.subtopic} />}
-                  {(q.prepLevel || set.prepLevel) && (
-                    <TagBadge kind="prep" label={q.prepLevel || set.prepLevel} />
-                  )}
-                  {(displayOptions.includes('Difficulty tag') || displayOptions.length === 0) && q.difficulty && (
-                    <TagBadge kind="difficulty" label={q.difficulty} />
-                  )}
                 </div>
-              </div>
 
-              <div className={styles.questionSidebar}>
-                <button className={`${styles.sidebarControl} ${styles.aiBtn}`} onClick={() => startAiEdit(q)}>
-                  ✦ Edit problem (AI)
-                </button>
-                <button className={styles.sidebarControl} onClick={() => startEdit(q)}>
-                  Edit text
-                </button>
-                <button
-                  className={styles.sidebarControl}
-                  onClick={() => moreLikeThis(q)}
-                  disabled={altLoadingId === q.id}
-                >
-                  {altLoadingId === q.id ? 'Generating...' : 'Alternative'}
-                </button>
-                <button className={`${styles.sidebarControl} ${styles.deleteBtn}`} onClick={() => setPendingDelete(q)}>
-                  Delete
-                </button>
-              </div>
-            </li>
-          ))}
+                <div className={styles.questionSidebar}>
+
+                  {settingsQuestionId === q.id && (
+                    <div className={styles.questionSettingsPopover} ref={questionSettingsRef}>
+                      <div className={styles.questionSettingsHeader}>
+                        <h4>Settings</h4>
+                        <button
+                          className={styles.questionSettingsClose}
+                          onClick={() => setSettingsQuestionId(null)}
+                          aria-label="Close"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className={styles.questionSettingsHint}>
+                        Applies only to this question. Anything you don't change will follow the set settings.
+                      </p>
+
+                      <span className={styles.sectionLabelTeal}>Worksheet</span>
+                      <div className={`${styles.checkGrid} ${styles.checkGridCompact}`}>
+                        {QUESTION_INCLUDE_OPTIONS.map((o) => (
+                          <label key={o} className={`${styles.checkCard} ${styles.checkCardCompact}`}>
+                            <input
+                              type="checkbox"
+                              checked={effIncludes.includes(o)}
+                              onChange={() => toggleQuestionInclude(q, o, outputIncludes)}
+                            />
+                            <span className={styles.checkBox}>✓</span>
+                            <span>{o}</span>
+                          </label>
+                        ))}
+                        {QUESTION_DISPLAY_OPTIONS.map((d) => (
+                          <label key={d} className={`${styles.checkCard} ${styles.checkCardCompact}`}>
+                            <input
+                              type="checkbox"
+                              checked={effDisplay.includes(d)}
+                              onChange={() => toggleQuestionDisplay(q, d, displayOptions)}
+                            />
+                            <span className={styles.checkBox}>✓</span>
+                            <span>{d}</span>
+                          </label>
+                        ))}
+                      </div>
+
+                      <span className={styles.sectionLabelViolet}>
+                        Teacher Key
+                      </span>
+                      <div className={`${styles.checkGrid} ${styles.checkGridCompact} ${styles.settingsGroupTeacher}`}>
+                        {TEACHER_INCLUDE_OPTIONS.map((o) => (
+                          <label key={o} className={`${styles.checkCard} ${styles.checkCardCompact}`}>
+                            <input
+                              type="checkbox"
+                              checked={effIncludes.includes(o)}
+                              onChange={() => toggleQuestionInclude(q, o, outputIncludes)}
+                            />
+                            <span className={styles.checkBox}>✓</span>
+                            <span>{o}</span>
+                          </label>
+                        ))}
+                      </div>
+
+                      <div className={styles.questionSettingsFooter}>
+                        <button
+                          className={styles.secondaryButton}
+                          onClick={() => resetQuestionOverrides(q)}
+                          disabled={!isCustom}
+                        >
+                          Use set settings
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <button className={`${styles.sidebarControl} ${styles.aiBtn}`} onClick={() => startAiEdit(q)}>
+                    ✦ Edit problem (AI)
+                  </button>
+                  <button
+                    className={`${styles.sidebarControl} ${styles.questionSettingsBtn}`}
+                    onClick={() => setSettingsQuestionId(settingsQuestionId === q.id ? null : q.id)}
+                  >
+                    Format Settings
+                  </button>
+                  <button className={styles.sidebarControl} onClick={() => startEdit(q)}>
+                    Edit text
+                  </button>
+                  <button
+                    className={styles.sidebarControl}
+                    onClick={() => moreLikeThis(q)}
+                    disabled={altLoadingId === q.id}
+                  >
+                    {altLoadingId === q.id ? 'Generating...' : 'Alternative'}
+                  </button>
+                  <button className={`${styles.sidebarControl} ${styles.deleteBtn}`} onClick={() => setPendingDelete(q)}>
+                    Delete
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </div>
 

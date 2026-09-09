@@ -63,7 +63,7 @@ export const CURRICULUM_DATA: CurriculumData = {
     ],
   },
   'Sec IV (CST)': {
-    'Topic 1 – Lines and Analytic Geometry': [
+    'Lines and Analytic Geometry': [
       'Slope',
       'Find the equation of a line functional form',
       'General form of the equation of a line',
@@ -75,7 +75,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Division point',
       'Analytic proofs',
     ],
-    'Topic 2 – From functions to modeling': [
+    'From functions to modeling': [
       'Real functions (notation, properties)',
       'Second-degree polynomial functions y = ax2',
       'Exponential functions y = acx',
@@ -83,7 +83,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Periodic functions (no equation)',
       'Piecewise functions',
     ],
-    'Topic 3 – Statistical measures and linear correlation': [
+    'Statistical measures and linear correlation': [
       'Single-variable distribution',
       'Measure of dispersion: mean deviation',
       'Stem-and-leaf plot',
@@ -92,12 +92,12 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Correlation (interpret, coefficient)',
       'Regression line',
     ],
-    'Topic 4 – From congruent to similar figures': [
+    'From congruent to similar figures': [
       'Congruent/isometric triangles',
       'Similar triangles',
       'Metric relations in right triangles',
     ],
-    'Topic 5 – Trigonometry': [
+    'Trigonometry': [
       'Trigonometric ratios',
       'Solving a right triangle',
       'Sine law',
@@ -105,7 +105,7 @@ export const CURRICULUM_DATA: CurriculumData = {
     ],
   },
   'Sec IV (SN)': {
-    'Topic 1 – Algebra and Equivalence': [
+    'Algebra and Equivalence': [
       'Multiplying algebraic expressions',
       'Division of polynomials',
       'Algebraic identities – 2nd degree',
@@ -116,7 +116,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Properties of equivalent figures',
       'Equivalent algebraic expressions',
     ],
-    'Topic 2 – Quadratic functions and trajectories': [
+    'Quadratic functions and trajectories': [
       'Standard form',
       'Role of parameters a, h and k',
       'Patterns and properties',
@@ -127,15 +127,15 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Inequalities with a quadratic function',
       'Solving a 2nd degree inequality with one variable',
     ],
-    'Topic 3 – Statistical measures and linear correlation': [
+    'Statistical measures and linear correlation': [
       'Two-variable distributions',
       'Correlation (interpret, coefficient)',
       'Regression line',
     ],
-    'Topic 4 – Greatest integer function': [
+    'Greatest integer function': [
       'Transformed Greatest Integer function',
     ],
-    'Topic 5 – Analytic Geometry': [
+    'Analytic Geometry': [
       'Slope',
       'Find the equation of a line functional form',
       'General form of the equation of a line',
@@ -150,12 +150,12 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Distance between two points',
       'Analytic proofs',
     ],
-    'Topic 6 – Geometric reasoning/proofs': [
+    'Geometric reasoning/proofs': [
       'Congruent triangles',
       'Similar triangles',
       'Metric relations in right triangles',
     ],
-    'Topic 7 – Trigonometry': [
+    'Trigonometry': [
       'Trigonometric relations',
       'Sine law',
       'Cosine law',
@@ -163,7 +163,7 @@ export const CURRICULUM_DATA: CurriculumData = {
     ],
   },
   'Sec V (CST)': {
-    'Topic 1 – Graphs': [
+    'Graphs': [
       'Tree diagrams and networks',
       'Graph',
       'Connected graph',
@@ -178,7 +178,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Chromatic number',
       'Critical path',
     ],
-    'Topic 2 – Systems of Equations and Inequalities': [
+    'Systems of Equations and Inequalities': [
       'Solving systems of equations',
       'Inequalities in the 1st degree with two variables',
       'System of inequalities',
@@ -188,7 +188,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Linear programming and optimal solutions',
       'Solving an optimization problem',
     ],
-    'Topic 3 – Financial mathematics': [
+    'Financial mathematics': [
       'Exponential notation',
       'Laws of exponents',
       'Logarithm (definition and change of base)',
@@ -197,12 +197,12 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Discounting',
       'Compounding',
     ],
-    'Topic 4 – Voting procedures': [
+    'Voting procedures': [
       'Majority rule and plurality voting',
       'Borda count, Condorcet method, elimination method and approval voting',
       'Majority election',
     ],
-    'Topic 5 – Cosine Law and Equivalent Figures': [
+    'Cosine Law and Equivalent Figures': [
       'Cosine Law',
       'Area of a figure',
       'Volume of a solid',
@@ -212,7 +212,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Comparing equivalent plane figures',
       'Comparing equivalent solids',
     ],
-    'Topic 6 – Probability': [
+    'Probability': [
       'Random experiment',
       'Probability of an event',
       'Theoretical, experimental and subjective probability',
@@ -227,7 +227,7 @@ export const CURRICULUM_DATA: CurriculumData = {
     ],
   },
   'Sec V (SN)': {
-    'Topic 1 – Vectors': [
+    'Vectors': [
       'Scalar quantity and vector quantity',
       'Properties of vectors',
       'Relations between vectors',
@@ -238,7 +238,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Scalar product of two vectors',
       'Chasles relation',
     ],
-    'Topic 2 – Systems of Equations and Inequalities': [
+    'Systems of Equations and Inequalities': [
       'Solving systems of equations',
       'Inequalities in the 1st degree with two variables',
       'System of inequalities',
@@ -247,7 +247,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Optimal solutions',
       'Solving an optimization problem',
     ],
-    'Topic 3 – Functions': [
+    'Functions': [
       'The role of parameters',
       'Inverse of a function',
       'Piecewise functions',
@@ -261,7 +261,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Finding the rule and solving a rational function',
       'Operations and composition of functions',
     ],
-    'Topic 4 – Exponential and Logarithmic Functions': [
+    'Exponential and Logarithmic Functions': [
       'Laws of exponents and exponential notation',
       'Exponential function',
       'Finding the rule of an exponential function',
@@ -271,7 +271,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Solving an exponential equations and inequalities',
       'Solving a logarithmic equations and inequalities',
     ],
-    'Topic 5 – Trigonometric functions': [
+    'Trigonometric functions': [
       'Radian',
       'Unit circle',
       'Periodic functions',
@@ -282,7 +282,7 @@ export const CURRICULUM_DATA: CurriculumData = {
       'Solving first degree trigonometric equations and inequalities',
       'Trigonometric identities (Pythagorean)',
     ],
-    'Topic 6 – Conics': [
+    'Conics': [
       'Geometric loci',
       'Circle and finding its equation',
       'Interior or exterior region of a circle',

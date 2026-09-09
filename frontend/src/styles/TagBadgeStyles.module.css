@@ -66,3 +66,28 @@
   color: #312e81;
   border-color: rgba(49, 46, 129, 0.25);
 }
+
+.custom {
+  color: #b5473d;
+  background: rgba(181, 71, 61, 0.1);
+  border-color: rgba(181, 71, 61, 0.25);
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 0 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.65;
+  transition: opacity 0.2s ease;
+}
+
+.clearBtn:hover {
+  opacity: 1;
+}
