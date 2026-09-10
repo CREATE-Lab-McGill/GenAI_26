@@ -120,6 +120,11 @@ export const initialGeneratorForm: GeneratorFormData = {
   groupBy: 'None',
 };
 
+export interface QuestionOutputOverrides {
+  outputIncludes?: OutputInclude[];
+  displayOptions?: DisplayOption[];
+}
+
 export interface GeneratedQuestion {
   id: string;
   prompt: string;
@@ -133,6 +138,8 @@ export interface GeneratedQuestion {
   subtopic?: string;
   prepLevel?: string;
   difficulty?: string;
+
+  outputOverrides?: QuestionOutputOverrides;
 }
 
 export interface GeneratedSet {

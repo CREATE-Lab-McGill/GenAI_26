@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import styles from '../styles/TagBadgeStyles.module.css';
 
-export type TagKind = 'topic' | 'subtopic' | 'prep' | 'difficulty';
+export type TagKind = 'topic' | 'subtopic' | 'prep' | 'difficulty' | 'custom';
 
 interface TagBadgeProps {
   kind: TagKind;
   label: string;
+  onClear?: () => void;
 }
 
 const KIND_PREFIX: Record<TagKind, string> = {
@@ -13,6 +14,7 @@ const KIND_PREFIX: Record<TagKind, string> = {
   subtopic: 'Subtopic',
   prep: 'Prep',
   difficulty: 'Diff',
+  custom: 'Format',
 };
 
 const TagBadge = ({ kind, label }: TagBadgeProps): React.ReactElement => {
@@ -26,6 +28,7 @@ const TagBadge = ({ kind, label }: TagBadgeProps): React.ReactElement => {
     >
       <span className={styles.prefix}>{KIND_PREFIX[kind]}</span>
       <span className={styles.labelText}>{label}</span>
+      
     </span>
   );
 };
