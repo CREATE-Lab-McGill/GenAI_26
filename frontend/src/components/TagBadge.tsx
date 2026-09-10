@@ -17,7 +17,7 @@ const KIND_PREFIX: Record<TagKind, string> = {
   custom: 'Format',
 };
 
-const TagBadge = ({ kind, label, onClear }: TagBadgeProps): React.ReactElement => {
+const TagBadge = ({ kind, label }: TagBadgeProps): React.ReactElement => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
