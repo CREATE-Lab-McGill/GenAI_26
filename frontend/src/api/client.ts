@@ -69,6 +69,7 @@ export const exportWordDocument = async (data: {
   name: string;
   questions: any[];
   mode: 'student' | 'teacher';
+  graphImages?: Record<string, string>;
 }) => {
   const response = await api.post("export-word/", data, {
     responseType: 'blob',
