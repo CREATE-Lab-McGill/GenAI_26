@@ -431,7 +431,7 @@ const Generator = (): React.ReactElement => {
                       <InfoTooltip text="These settings determine what appears on the version students receive, including instructions, hints, and how much space is provided for their work." />
                     </span>
                     <div className={styles.checkGrid}>
-                      {['Instructions', 'Hints', 'Scratch space'].map((o) => (
+                      {['Instructions', 'Hints'].map((o) => (
                         <label key={o} className={styles.checkCard}>
                           <input
                             type="checkbox"
@@ -442,7 +442,7 @@ const Generator = (): React.ReactElement => {
                           <span>{o}</span>
                         </label>
                       ))}
-                      {['Answer space', 'Extra room for solution', 'Graph / diagram space', 'Difficulty tag'].map((d) => (
+                      {['Answer space', 'Graph / diagram space', 'Difficulty tag'].map((d) => (
                         <label key={d} className={styles.checkCard}>
                           <input
                             type="checkbox"
@@ -512,12 +512,6 @@ const Generator = (): React.ReactElement => {
                       <div className={styles.previewGraphSpace} />
                     )}
 
-                    {(formData.displayOptions.includes('Extra room for solution') || formData.outputIncludes.includes('Scratch space')) && (
-                      <div className={styles.previewExtraSpace}>
-                        {formData.outputIncludes.includes('Scratch space') ? 'Scratch Space provided' : 'Extra room for solution'}
-                      </div>
-                    )}
-
                     {formData.displayOptions.includes('Answer space') && (
                       <div className={styles.previewAnswerSpace}>
                         Answer: _________________
@@ -573,7 +567,7 @@ const Generator = (): React.ReactElement => {
                     <small>OUTPUT</small>
                     <p>
                       <strong>Student:</strong>{' '}
-                      {[...formData.outputIncludes.filter(o => ['Instructions', 'Hints', 'Scratch space'].includes(o)), ...formData.displayOptions].join(', ') || 'None'}
+                      {[...formData.outputIncludes.filter(o => ['Instructions', 'Hints'].includes(o)), ...formData.displayOptions].join(', ') || 'None'}
                     </p>
                     <p>
                       <strong>Teacher:</strong>{' '}

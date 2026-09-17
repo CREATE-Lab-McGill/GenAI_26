@@ -17,22 +17,23 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import "mathlive";
 import { saveAs } from 'file-saver';
+import { GraphCanvas } from '../components/GraphCanvas';
+import { toPng } from 'html-to-image';
+import { DEFAULT_GRAPH_CONFIG, type GraphStyle, type GraphConfig } from '../types/problem';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 
-const STUDENT_INCLUDE_OPTIONS: OutputInclude[] = ['Instructions', 'Hints', 'Scratch space'];
+const STUDENT_INCLUDE_OPTIONS: OutputInclude[] = ['Instructions', 'Hints'];
 const TEACHER_INCLUDE_OPTIONS: OutputInclude[] = ['Answer key', 'Worked solutions'];
 const STUDENT_DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
-  'Extra room for solution',
   'Graph / diagram space',
   'Difficulty tag',
 ];
 
-const QUESTION_INCLUDE_OPTIONS: OutputInclude[] = ['Hints', 'Scratch space'];
+const QUESTION_INCLUDE_OPTIONS: OutputInclude[] = ['Hints'];
 const QUESTION_DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
-  'Extra room for solution',
   'Graph / diagram space',
   'Difficulty tag',
 ];
@@ -182,6 +183,30 @@ const ProblemOutput = (): React.ReactElement => {
         outputOverrides: hasAnyOverride ? newOverrides : undefined,
       };
     });
+    updateLocalStorage({ ...set, questions: updatedQuestions });
+  };
+
+  const updateGraphConfig = (q: GeneratedQuestion, newConfig: Partial<GraphConfig>) => {
+    if (!set) return;
+
+    const currentConfig = q.outputOverrides?.graphConfig
+      ?? set.formData?.graphConfig
+      ?? DEFAULT_GRAPH_CONFIG;
+
+    const updatedConfig = { ...currentConfig, ...newConfig };
+
+    const updatedQuestions = questions.map((item) => {
+      if (item.id !== q.id) return item;
+
+      return {
+        ...item,
+        outputOverrides: {
+          ...item.outputOverrides,
+          graphConfig: updatedConfig
+        }
+      };
+    });
+
     updateLocalStorage({ ...set, questions: updatedQuestions });
   };
 
@@ -376,18 +401,49 @@ const ProblemOutput = (): React.ReactElement => {
     }
   };
 
+  const captureAllGraphs = async (): Promise<Record<string, string>> => {
+    const images: Record<string, string> = {};
+    for (const q of questions) {
+      const effDisplay = getEffectiveDisplay(q, displayOptions);
+      if (!effDisplay.includes('Graph / diagram space')) continue;
+
+      const node = document.getElementById(`graph-${q.id}`);
+      if (!node) continue;
+
+      const rect = node.getBoundingClientRect();
+      const originalWidth = node.style.width;
+      node.style.width = `${rect.width}px`;
+
+      try {
+        images[q.id] = await toPng(node, {
+          pixelRatio: 2,
+          backgroundColor: '#ffffff',
+          skipFonts: true
+        });
+      } catch (err) {
+        console.error(`Error capturing graph ${q.id}:`, err);
+      } finally {
+        node.style.width = originalWidth;
+      }
+    }
+    return images;
+  };
+
   const handleExportWord = async (mode: PrintMode) => {
     try {
+      const graphImages = await captureAllGraphs();
+
       const blob = await exportWordDocument({
         name: set!.name || set!.topic || 'Untitled set',
         questions: questions,
-        mode: mode
+        mode: mode,
+        graphImages
       });
 
       saveAs(blob, `${set!.name || 'problem-set'}-${mode}.docx`);
 
     } catch (error) {
-      console.error("Error al exportar:", error);
+      console.error("Error exporting:", error);
       alert("There was a problem generating the Word file. Please try again.");
     }
   };
@@ -633,13 +689,10 @@ const ProblemOutput = (): React.ReactElement => {
                       )}
 
                       {effDisplay.includes('Graph / diagram space') && (
-                        <div className={styles.graphSpace} />
-                      )}
-
-                      {(effDisplay.includes('Extra room for solution') || effIncludes.includes('Scratch space')) && (
-                        <div className={styles.scratchSpace}>
-                          {effIncludes.includes('Scratch space') ? 'Scratch Space' : 'Solution Space'}
-                        </div>
+                        <GraphCanvas
+                          id={`graph-${q.id}`}
+                          config={q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG}
+                        />
                       )}
 
                       {effDisplay.includes('Answer space') && (
@@ -698,71 +751,235 @@ const ProblemOutput = (): React.ReactElement => {
                 <div className={styles.questionSidebar}>
 
                   {settingsQuestionId === q.id && (
-                    <div className={styles.questionSettingsPopover} ref={questionSettingsRef}>
-                      <div className={styles.questionSettingsHeader}>
-                        <h4>Settings</h4>
+                    <div className={styles.sleekPopover} ref={questionSettingsRef}>
+                      <div className={styles.sleekHeader}>
+                        <h4>Format Settings</h4>
                         <button
-                          className={styles.questionSettingsClose}
+                          className={styles.sleekClose}
                           onClick={() => setSettingsQuestionId(null)}
                           aria-label="Close"
                         >
                           ×
                         </button>
                       </div>
-                      <p className={styles.questionSettingsHint}>
-                        Applies only to this question. Anything you don't change will follow the set settings.
-                      </p>
 
-                      <span className={styles.sectionLabelTeal}>Worksheet</span>
-                      <div className={`${styles.checkGrid} ${styles.checkGridCompact}`}>
-                        {QUESTION_INCLUDE_OPTIONS.map((o) => (
-                          <label key={o} className={`${styles.checkCard} ${styles.checkCardCompact}`}>
-                            <input
-                              type="checkbox"
-                              checked={effIncludes.includes(o)}
-                              onChange={() => toggleQuestionInclude(q, o, outputIncludes)}
-                            />
-                            <span className={styles.checkBox}>✓</span>
-                            <span>{o}</span>
-                          </label>
-                        ))}
-                        {QUESTION_DISPLAY_OPTIONS.map((d) => (
-                          <label key={d} className={`${styles.checkCard} ${styles.checkCardCompact}`}>
-                            <input
-                              type="checkbox"
-                              checked={effDisplay.includes(d)}
-                              onChange={() => toggleQuestionDisplay(q, d, displayOptions)}
-                            />
-                            <span className={styles.checkBox}>✓</span>
-                            <span>{d}</span>
-                          </label>
-                        ))}
+                      <div className={styles.sleekScrollArea}>
+                        <span className={styles.sleekSectionTitle}>Worksheet</span>
+                        <div className={styles.sleekToggleList}>
+                          {QUESTION_INCLUDE_OPTIONS.map((o) => (
+                            <label key={o} className={styles.sleekToggle}>
+                              <input
+                                type="checkbox"
+                                checked={effIncludes.includes(o)}
+                                onChange={() => toggleQuestionInclude(q, o, outputIncludes)}
+                              />
+                              <span>{o}</span>
+                            </label>
+                          ))}
+                          {QUESTION_DISPLAY_OPTIONS.map((d) => (
+                            <label key={d} className={styles.sleekToggle}>
+                              <input
+                                type="checkbox"
+                                checked={effDisplay.includes(d)}
+                                onChange={() => toggleQuestionDisplay(q, d, displayOptions)}
+                              />
+                              <span>{d}</span>
+                            </label>
+                          ))}
+                        </div>
+
+                        <span className={styles.sleekSectionTitle} style={{ color: 'var(--violet)' }}>
+                          Teacher Key
+                        </span>
+                        <div className={styles.sleekToggleList}>
+                          {TEACHER_INCLUDE_OPTIONS.map((o) => (
+                            <label key={o} className={styles.sleekToggle}>
+                              <input
+                                type="checkbox"
+                                checked={effIncludes.includes(o)}
+                                onChange={() => toggleQuestionInclude(q, o, outputIncludes)}
+                              />
+                              <span>{o}</span>
+                            </label>
+                          ))}
+                        </div>
+
+                        {effDisplay.includes('Graph / diagram space') && (
+                          <div style={{ marginTop: '12px', paddingTop: '0px' }}>
+                            <span className={styles.sleekSectionTitle}>Graph Layout</span>
+                            <div className={styles.segmentedControl}>
+                              {[
+                                { label: 'All', style: 'axes', x: [-10, 10], y: [-10, 10] },
+                                { label: 'Q1', style: 'quadrant1', x: [0, 10], y: [0, 10] },
+                                { label: 'Q2', style: 'axes', x: [-10, 0], y: [0, 10] },
+                                { label: 'Q3', style: 'axes', x: [-10, 0], y: [-10, 0] },
+                                { label: 'Q4', style: 'axes', x: [0, 10], y: [-10, 0] },
+                                { label: 'Off', style: 'blank-grid', x: [-10, 10], y: [-10, 10] }
+                              ].map((opt) => {
+                                const currentConfig = q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG;
+                                const isActive =
+                                  (currentConfig.xRange?.[0] ?? -10) === opt.x[0] &&
+                                  (currentConfig.xRange?.[1] ?? 10) === opt.x[1] &&
+                                  (currentConfig.yRange?.[0] ?? -10) === opt.y[0] &&
+                                  (currentConfig.yRange?.[1] ?? 10) === opt.y[1] &&
+                                  currentConfig.style === opt.style;
+
+                                return (
+                                  <button
+                                    key={opt.label}
+                                    type="button"
+                                    className={`${styles.segmentedBtn} ${isActive ? styles.segmentedActive : ''}`}
+                                    onClick={() => {
+                                      updateGraphConfig(q, {
+                                        style: opt.style as GraphStyle,
+                                        xRange: opt.x as [number, number],
+                                        yRange: opt.y as [number, number]
+                                      });
+                                    }}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <span className={styles.sleekSectionTitle}>Size</span>
+                            <div className={styles.segmentedControl}>
+                              {[
+                                { id: 'sm', label: 'Small' },
+                                { id: 'md', label: 'Medium' },
+                                { id: 'lg', label: 'Large' }
+                              ].map((opt) => (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  className={`${styles.segmentedBtn} ${(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).size === opt.id ? styles.segmentedActive : ''}`}
+                                  onClick={() => updateGraphConfig(q, { size: opt.id as 'sm' | 'md' | 'lg' })}
+                                >
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+
+                            <span className={styles.sleekSectionTitle}>Scale</span>
+                            
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+
+                              <div className={styles.segmentedControl} style={{ flex: 1 }}>
+                                {[1, 2, 5].map((s) => (
+                                  <button
+                                    key={s}
+                                    type="button"
+                                    className={`${styles.segmentedBtn} ${(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).step === s ? styles.segmentedActive : ''}`}
+                                    onClick={() => updateGraphConfig(q, { step: s })}
+                                  >
+                                    {s}
+                                  </button>
+                                ))}
+                              </div>
+
+                              <div className={styles.axisInputWrap} style={{ width: '85px', flexShrink: 0 }}>
+                                <span className={styles.axisInputTag}>Step</span>
+                                <input
+                                  type="text"
+                                  className={styles.sleekInput}
+                                  value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).step ?? 2}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const num = val === '' || val.endsWith('.') ? (val as any) : Number(val);
+                                    updateGraphConfig(q, { step: num });
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            <label className={styles.sleekToggle} style={{ marginBottom: '12px' }}>
+                              <input
+                                type="checkbox"
+                                checked={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).showLabels ?? true}
+                                onChange={(e) => updateGraphConfig(q, { showLabels: e.target.checked })}
+                              />
+                              <span>Show axis labels</span>
+                            </label>
+
+                            <span className={styles.sleekSectionTitle}>Axis Range</span>
+
+                            <div className={styles.axisGroup}>
+                              <span className={styles.axisGroupLabel}>X Axis</span>
+                              <div className={styles.axisInputRow}>
+                                <div className={styles.axisInputWrap}>
+                                  <span className={styles.axisInputTag}>−X</span>
+                                  <input
+                                    type="text"
+                                    className={styles.sleekInput}
+                                    value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).xRange?.[0] ?? -10}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
+                                      updateGraphConfig(q, { xRange: [num, (q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).xRange?.[1] ?? 10] });
+                                    }}
+                                  />
+                                </div>
+                                <span className={styles.sleekAxisDivider}>to</span>
+                                <div className={styles.axisInputWrap}>
+                                  <span className={styles.axisInputTag}>X</span>
+                                  <input
+                                    type="text"
+                                    className={styles.sleekInput}
+                                    value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).xRange?.[1] ?? 10}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
+                                      updateGraphConfig(q, { xRange: [(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).xRange?.[0] ?? -10, num] });
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className={styles.axisGroup}>
+                              <span className={styles.axisGroupLabel}>Y Axis</span>
+                              <div className={styles.axisInputRow}>
+                                <div className={styles.axisInputWrap}>
+                                  <span className={styles.axisInputTag}>−Y</span>
+                                  <input
+                                    type="text"
+                                    className={styles.sleekInput}
+                                    value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).yRange?.[0] ?? -10}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
+                                      updateGraphConfig(q, { yRange: [num, (q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).yRange?.[1] ?? 10] });
+                                    }}
+                                  />
+                                </div>
+                                <span className={styles.sleekAxisDivider}>to</span>
+                                <div className={styles.axisInputWrap}>
+                                  <span className={styles.axisInputTag}>Y</span>
+                                  <input
+                                    type="text"
+                                    className={styles.sleekInput}
+                                    value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).yRange?.[1] ?? 10}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
+                                      updateGraphConfig(q, { yRange: [(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).yRange?.[0] ?? -10, num] });
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      <span className={styles.sectionLabelViolet}>
-                        Teacher Key
-                      </span>
-                      <div className={`${styles.checkGrid} ${styles.checkGridCompact} ${styles.settingsGroupTeacher}`}>
-                        {TEACHER_INCLUDE_OPTIONS.map((o) => (
-                          <label key={o} className={`${styles.checkCard} ${styles.checkCardCompact}`}>
-                            <input
-                              type="checkbox"
-                              checked={effIncludes.includes(o)}
-                              onChange={() => toggleQuestionInclude(q, o, outputIncludes)}
-                            />
-                            <span className={styles.checkBox}>✓</span>
-                            <span>{o}</span>
-                          </label>
-                        ))}
-                      </div>
-
-                      <div className={styles.questionSettingsFooter}>
+                      <div className={styles.sleekFooter}>
                         <button
-                          className={styles.secondaryButton}
+                          className={styles.sleekResetBtn}
                           onClick={() => resetQuestionOverrides(q)}
                           disabled={!isCustom}
                         >
-                          Use set settings
+                          Clear custom settings
                         </button>
                       </div>
                     </div>
