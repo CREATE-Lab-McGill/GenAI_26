@@ -58,21 +58,19 @@ export interface QuestionGroup {
   difficulty: Difficulty;
 }
 
-export type OutputInclude = 'Instructions' | 'Answer key' | 'Worked solutions' | 'Hints' | 'Scratch space';
+export type OutputInclude = 'Instructions' | 'Answer key' | 'Worked solutions' | 'Hints';
 
 export const OUTPUT_INCLUDES: OutputInclude[] = [
   'Instructions',
   'Answer key',
   'Worked solutions',
   'Hints',
-  'Scratch space',
 ];
 
 export type DisplayOption = 'Answer space' | 'Extra room for solution' | 'Graph / diagram space' | 'Difficulty tag';
 
 export const DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
-  'Extra room for solution',
   'Graph / diagram space',
   'Difficulty tag',
 ];
@@ -97,6 +95,7 @@ export interface GeneratorFormData {
   displayOptions: DisplayOption[];
   questionOrder: QuestionOrder;
   groupBy: GroupBy;
+  graphConfig?: GraphConfig;
 }
 
 export const initialGeneratorForm: GeneratorFormData = {
@@ -123,6 +122,7 @@ export const initialGeneratorForm: GeneratorFormData = {
 export interface QuestionOutputOverrides {
   outputIncludes?: OutputInclude[];
   displayOptions?: DisplayOption[];
+  graphConfig?: GraphConfig;
 }
 
 export interface GeneratedQuestion {
@@ -163,3 +163,29 @@ export interface TeacherProfile {
   defaultLanguage: 'English' | 'French' | 'Spanish';
   savedDefaults: Partial<GeneratorFormData> | null;
 }
+
+export type GraphStyle = 'blank-grid' | 'axes' | 'quadrant1';
+
+export interface GraphConfig {
+  size: 'sm' | 'md' | 'lg';
+  style: GraphStyle;
+  xRange?: [number, number];
+  yRange?: [number, number];
+  step?: number;       
+  showLabels?: boolean;
+}
+
+export const GRAPH_SIZE_PX: Record<GraphConfig['size'], number> = {
+  sm: 160,
+  md: 220,
+  lg: 320,
+};
+
+export const DEFAULT_GRAPH_CONFIG: GraphConfig = {
+  size: 'md',
+  style: 'axes',
+  xRange: [-10, 10],
+  yRange: [-10, 10],
+  step: 2,
+  showLabels: true,
+};

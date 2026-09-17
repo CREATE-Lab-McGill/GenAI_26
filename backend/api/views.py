@@ -1,6 +1,7 @@
 import os
 import tempfile
 import uuid
+import base64
 
 import pypandoc
 from django.http import HttpResponse
@@ -17,7 +18,6 @@ from .services.llm import (
     resync_answer_to_prompt,
     generate_alternative_question,
 )
-
 
 @api_view(["GET"])
 def health_check(request):
@@ -235,7 +235,6 @@ def question_alternative(request, pk):
     except Exception as e:
         return Response({"error": str(e)}, status=500)
 
-
 @api_view(["POST"])
 def export_word(request):
     try:
@@ -243,15 +242,33 @@ def export_word(request):
         questions = data.get("questions", [])
         mode = data.get("mode", "student")
         set_name = data.get("name", "Untitled Set")
+        graph_images = data.get("graphImages", {})  
 
         md_content = f"# {set_name}\n\n"
 
         if mode == "teacher":
             md_content += "**Answer Key**\n\n"
 
+        temp_images = []  
+
         for i, question in enumerate(questions):
             md_content += f"### Question {i + 1}\n\n"
             md_content += f"{question.get('prompt', '')}\n\n"
+
+            q_id = question.get("id")
+            img_data_url = graph_images.get(q_id)
+            if img_data_url:
+                if "," in img_data_url:
+                    img_data_url = img_data_url.split(",")[1]
+                
+                img_bytes = base64.b64decode(img_data_url)
+                
+                img_temp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+                img_temp.write(img_bytes)
+                img_temp.close()
+                temp_images.append(img_temp.name)
+
+                md_content += f"![]({img_temp.name})\n\n"
 
             if mode == "teacher":
                 if question.get("solution"):
@@ -294,13 +311,18 @@ def export_word(request):
             )
 
         os.remove(docx_path)
+        for img_path in temp_images:
+            try:
+                os.remove(img_path)
+            except OSError:
+                pass
 
         return response
 
     except Exception as e:
         return Response({"error": str(e)}, status=500)
 
-
+    
 @api_view(["POST"])
 def reorder_questions(request, pk):
     try:
