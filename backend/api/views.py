@@ -64,7 +64,11 @@ def generate_set(request):
                 prompt=problem.get("prompt"),
                 answer=problem.get("answer"),
                 solution=problem.get("solution"),
+                hint=problem.get("hint"),
                 format=problem.get("format"),
+                topic=problem.get("topic"),
+                subtopic=problem.get("subtopic"),
+                prep_level=problem.get("prepLevel"),
                 difficulty=problem.get("difficulty"),
             )
 

@@ -20,6 +20,7 @@ import { saveAs } from 'file-saver';
 import { GraphCanvas } from '../components/GraphCanvas';
 import { toPng } from 'html-to-image';
 import { DEFAULT_GRAPH_CONFIG, type GraphStyle, type GraphConfig } from '../types/problem';
+import GraphSettingsEditor from '../components/GraphSettingsEditor';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 
@@ -153,7 +154,8 @@ const ProblemOutput = (): React.ReactElement => {
     q.outputOverrides?.displayOptions ?? setDisplay;
 
   const hasCustomSettings = (q: GeneratedQuestion): boolean =>
-    !!q.outputOverrides?.outputIncludes || !!q.outputOverrides?.displayOptions;
+    !!q.outputOverrides?.outputIncludes || !!q.outputOverrides?.displayOptions || 
+    !!q.outputOverrides?.graphConfig;
 
   const arraysEqualUnordered = <T,>(a: T[], b: T[]): boolean => {
     if (a.length !== b.length) return false;
@@ -208,6 +210,21 @@ const ProblemOutput = (): React.ReactElement => {
     });
 
     updateLocalStorage({ ...set, questions: updatedQuestions });
+  };
+
+  const updateGlobalGraphConfig = (newConfig: Partial<GraphConfig>) => {
+    if (!set) return;
+
+    const currentConfig = set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG;
+    const updatedConfig = { ...currentConfig, ...newConfig };
+
+    updateLocalStorage({
+      ...set,
+      formData: {
+        ...set.formData,
+        graphConfig: updatedConfig
+      }
+    });
   };
 
   const toggleQuestionDisplay = (q: GeneratedQuestion, option: DisplayOption, setDisplay: DisplayOption[]) => {
@@ -806,171 +823,13 @@ const ProblemOutput = (): React.ReactElement => {
 
                         {effDisplay.includes('Graph / diagram space') && (
                           <div style={{ marginTop: '12px', paddingTop: '0px' }}>
-                            <span className={styles.sleekSectionTitle}>Graph Layout</span>
-                            <div className={styles.segmentedControl}>
-                              {[
-                                { label: 'All', style: 'axes', x: [-10, 10], y: [-10, 10] },
-                                { label: 'Q1', style: 'quadrant1', x: [0, 10], y: [0, 10] },
-                                { label: 'Q2', style: 'axes', x: [-10, 0], y: [0, 10] },
-                                { label: 'Q3', style: 'axes', x: [-10, 0], y: [-10, 0] },
-                                { label: 'Q4', style: 'axes', x: [0, 10], y: [-10, 0] },
-                                { label: 'Off', style: 'blank-grid', x: [-10, 10], y: [-10, 10] }
-                              ].map((opt) => {
-                                const currentConfig = q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG;
-                                const isActive =
-                                  (currentConfig.xRange?.[0] ?? -10) === opt.x[0] &&
-                                  (currentConfig.xRange?.[1] ?? 10) === opt.x[1] &&
-                                  (currentConfig.yRange?.[0] ?? -10) === opt.y[0] &&
-                                  (currentConfig.yRange?.[1] ?? 10) === opt.y[1] &&
-                                  currentConfig.style === opt.style;
-
-                                return (
-                                  <button
-                                    key={opt.label}
-                                    type="button"
-                                    className={`${styles.segmentedBtn} ${isActive ? styles.segmentedActive : ''}`}
-                                    onClick={() => {
-                                      updateGraphConfig(q, {
-                                        style: opt.style as GraphStyle,
-                                        xRange: opt.x as [number, number],
-                                        yRange: opt.y as [number, number]
-                                      });
-                                    }}
-                                  >
-                                    {opt.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            <span className={styles.sleekSectionTitle}>Size</span>
-                            <div className={styles.segmentedControl}>
-                              {[
-                                { id: 'sm', label: 'Small' },
-                                { id: 'md', label: 'Medium' },
-                                { id: 'lg', label: 'Large' }
-                              ].map((opt) => (
-                                <button
-                                  key={opt.id}
-                                  type="button"
-                                  className={`${styles.segmentedBtn} ${(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).size === opt.id ? styles.segmentedActive : ''}`}
-                                  onClick={() => updateGraphConfig(q, { size: opt.id as 'sm' | 'md' | 'lg' })}
-                                >
-                                  {opt.label}
-                                </button>
-                              ))}
-                            </div>
-
-                            <span className={styles.sleekSectionTitle}>Scale</span>
-                            
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-
-                              <div className={styles.segmentedControl} style={{ flex: 1 }}>
-                                {[1, 2, 5].map((s) => (
-                                  <button
-                                    key={s}
-                                    type="button"
-                                    className={`${styles.segmentedBtn} ${(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).step === s ? styles.segmentedActive : ''}`}
-                                    onClick={() => updateGraphConfig(q, { step: s })}
-                                  >
-                                    {s}
-                                  </button>
-                                ))}
-                              </div>
-
-                              <div className={styles.axisInputWrap} style={{ width: '85px', flexShrink: 0 }}>
-                                <span className={styles.axisInputTag}>Step</span>
-                                <input
-                                  type="text"
-                                  className={styles.sleekInput}
-                                  value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).step ?? 2}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    const num = val === '' || val.endsWith('.') ? (val as any) : Number(val);
-                                    updateGraphConfig(q, { step: num });
-                                  }}
-                                />
-                              </div>
-                            </div>
-
-                            <label className={styles.sleekToggle} style={{ marginBottom: '12px' }}>
-                              <input
-                                type="checkbox"
-                                checked={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).showLabels ?? true}
-                                onChange={(e) => updateGraphConfig(q, { showLabels: e.target.checked })}
-                              />
-                              <span>Show axis labels</span>
-                            </label>
-
-                            <span className={styles.sleekSectionTitle}>Axis Range</span>
-
-                            <div className={styles.axisGroup}>
-                              <span className={styles.axisGroupLabel}>X Axis</span>
-                              <div className={styles.axisInputRow}>
-                                <div className={styles.axisInputWrap}>
-                                  <span className={styles.axisInputTag}>−X</span>
-                                  <input
-                                    type="text"
-                                    className={styles.sleekInput}
-                                    value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).xRange?.[0] ?? -10}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
-                                      updateGraphConfig(q, { xRange: [num, (q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).xRange?.[1] ?? 10] });
-                                    }}
-                                  />
-                                </div>
-                                <span className={styles.sleekAxisDivider}>to</span>
-                                <div className={styles.axisInputWrap}>
-                                  <span className={styles.axisInputTag}>X</span>
-                                  <input
-                                    type="text"
-                                    className={styles.sleekInput}
-                                    value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).xRange?.[1] ?? 10}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
-                                      updateGraphConfig(q, { xRange: [(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).xRange?.[0] ?? -10, num] });
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className={styles.axisGroup}>
-                              <span className={styles.axisGroupLabel}>Y Axis</span>
-                              <div className={styles.axisInputRow}>
-                                <div className={styles.axisInputWrap}>
-                                  <span className={styles.axisInputTag}>−Y</span>
-                                  <input
-                                    type="text"
-                                    className={styles.sleekInput}
-                                    value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).yRange?.[0] ?? -10}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
-                                      updateGraphConfig(q, { yRange: [num, (q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).yRange?.[1] ?? 10] });
-                                    }}
-                                  />
-                                </div>
-                                <span className={styles.sleekAxisDivider}>to</span>
-                                <div className={styles.axisInputWrap}>
-                                  <span className={styles.axisInputTag}>Y</span>
-                                  <input
-                                    type="text"
-                                    className={styles.sleekInput}
-                                    value={(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).yRange?.[1] ?? 10}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
-                                      updateGraphConfig(q, { yRange: [(q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG).yRange?.[0] ?? -10, num] });
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
+                            <GraphSettingsEditor
+                              currentConfig={q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG}
+                              onUpdate={(newConfig) => updateGraphConfig(q, newConfig)}
+                            />
                           </div>
                         )}
+
                       </div>
 
                       <div className={styles.sleekFooter}>
@@ -1096,6 +955,17 @@ const ProblemOutput = (): React.ReactElement => {
                 ))}
               </div>
             </div>
+
+            {displayOptions.includes('Graph / diagram space') && (
+              <div className={styles.settingsGroup} style={{ marginTop: '2px' }}>
+                <div className={styles.compactGlobalGraph}>
+                  <GraphSettingsEditor
+                    currentConfig={set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG}
+                    onUpdate={(newConfig) => updateGlobalGraphConfig(newConfig)}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className={styles.modalActions}>
               <button className={styles.primaryButton} onClick={() => setShowSettingsModal(false)}>Done</button>
