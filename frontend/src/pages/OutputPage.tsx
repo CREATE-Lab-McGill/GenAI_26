@@ -19,7 +19,7 @@ import "mathlive";
 import { saveAs } from 'file-saver';
 import { GraphCanvas } from '../components/GraphCanvas';
 import { toPng } from 'html-to-image';
-import { DEFAULT_GRAPH_CONFIG, type GraphStyle, type GraphConfig } from '../types/problem';
+import { DEFAULT_GRAPH_CONFIG, type GraphConfig } from '../types/problem';
 import GraphSettingsEditor from '../components/GraphSettingsEditor';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
