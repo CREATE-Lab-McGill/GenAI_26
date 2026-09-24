@@ -5,6 +5,7 @@ import Dashboard from '../pages/DashboardPage';
 import Generator from '../pages/GeneratorPage';
 import ProblemOutput from '../pages/OutputPage';
 import Account from '../pages/AccountPage';
+import SituationalGenerator from '../pages/SituationalGeneratorPage';
 // import ErrorPage from '../pages/ErrorPage';
 
 const router = createBrowserRouter([
@@ -25,6 +26,11 @@ const router = createBrowserRouter([
       {
         path: '/generate',
         element: <Generator />,
+        // errorElement: <ErrorPage />,
+      },
+      {
+        path: '/generate-situational',
+        element: <SituationalGenerator />,
         // errorElement: <ErrorPage />,
       },
       {
