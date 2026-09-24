@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_PROFILE } from '../services/mockData';
 import type { PrepLevel, GeneratedSet } from '../types/problem';
@@ -50,7 +50,31 @@ const icons = {
       <path d="m3.5 13 8.5 5 8.5-5" />
     </svg>
   ),
+  scenario: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  ),
 };
+
+const PROBLEM_TYPES = [
+  {
+    key: 'problem-set',
+    label: 'Problem Set',
+    description: 'Multiple questions',
+    icon: icons.document,
+    route: '/generate',
+  },
+  {
+    key: 'situational',
+    label: 'Situational Problem',
+    description: 'Real-world scenario, multiple topics',
+    icon: icons.scenario,
+    route: '/generate-situational',
+  },
+] as const;
 
 const QUICK_ACTIONS = [
   {
@@ -88,6 +112,20 @@ const Dashboard = (): React.ReactElement => {
   const [recentSets, setRecentSets] = useState<GeneratedSet[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
 
+  const [selectedType, setSelectedType] = useState<typeof PROBLEM_TYPES[number]['key']>('problem-set');
+  const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsTypeMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   useEffect(() => {
     getSets()
       .then((data: GeneratedSet[]) => setRecentSets(data.slice(0, 5)))
@@ -101,8 +139,11 @@ const Dashboard = (): React.ReactElement => {
   };
 
   const handleGenerate = () => {
-    navigate('/generate', { state: { prepLevel: selectedPrep } });
+    const type = PROBLEM_TYPES.find((t) => t.key === selectedType)!;
+    navigate(type.route, { state: { prepLevel: selectedPrep } });
   };
+
+  const selectedTypeData = PROBLEM_TYPES.find(t => t.key === selectedType)!;
 
   return (
     <main className={styles.dashboard}>
@@ -147,8 +188,57 @@ const Dashboard = (): React.ReactElement => {
               })}
             </div>
 
+            <div className={styles.typeSection}>
+              <span className={styles.prepLabel}>What are you generating</span>
+              
+              <div className={styles.customDropdown} ref={dropdownRef}>
+                <button
+                  type="button"
+                  className={`${styles.dropdownTrigger} ${isTypeMenuOpen ? styles.dropdownTriggerActive : ''}`}
+                  onClick={() => setIsTypeMenuOpen(!isTypeMenuOpen)}
+                >
+                  <span className={styles.prepIcon} aria-hidden="true">{selectedTypeData.icon}</span>
+                  <div className={styles.typeCopy}>
+                    <span className={styles.prepName}>{selectedTypeData.label}</span>
+                    <span className={styles.typeDescription}>{selectedTypeData.description}</span>
+                  </div>
+                  <span className={`${styles.dropdownChevron} ${isTypeMenuOpen ? styles.chevronOpen : ''}`} aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </span>
+                </button>
+
+                {isTypeMenuOpen && (
+                  <div className={styles.dropdownMenu}>
+                    {PROBLEM_TYPES.map((type) => {
+                      const isActive = selectedType === type.key;
+                      return (
+                        <button
+                          key={type.key}
+                          type="button"
+                          className={`${styles.dropdownItem} ${isActive ? styles.dropdownItemActive : ''}`}
+                          onClick={() => {
+                            setSelectedType(type.key);
+                            setIsTypeMenuOpen(false);
+                          }}
+                        >
+                          <span className={styles.prepIcon} aria-hidden="true">{type.icon}</span>
+                          <div className={styles.typeCopy}>
+                            <span className={styles.prepName}>{type.label}</span>
+                            <span className={styles.typeDescription}>{type.description}</span>
+                          </div>
+                          {isActive && <span className={styles.typeCheck}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <button className={styles.generateButton} onClick={handleGenerate}>
-              Generate new set for {selectedPrep} <span aria-hidden="true">→</span>
+              Generate {selectedTypeData.label.toLowerCase()} for {selectedPrep} <span aria-hidden="true">→</span>
             </button>
           </div>
         </div>

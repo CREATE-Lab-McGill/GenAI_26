@@ -136,11 +136,10 @@
     radial-gradient(circle at 100% 0%, rgba(137, 128, 245, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 0% 100%, rgba(126, 188, 230, 0.12) 0%, transparent 40%);
   border: 1px solid var(--border-soft);
-  border-radius: 22px;
-  padding: 40px;
+  border-radius: 18px;
+  padding: 28px 32px;
   box-shadow: var(--shadow-md);
   position: relative;
-  overflow: hidden;
 }
 
 .heroCopy {
@@ -173,6 +172,7 @@
   color: var(--teal-deep);
   position: relative;
 }
+
 .gradientText::after {
   content: '';
   position: absolute;
@@ -283,6 +283,147 @@
   font-size: 12px;
 }
 
+.typeSection {
+  margin-top: 20px;
+  position: relative; 
+  z-index: 100; 
+}
+
+.customDropdown {
+  position: relative;
+  width: 100%;
+  max-width: 440px; 
+}
+
+.dropdownTrigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px; 
+  border: 1px solid var(--border-soft);
+  border-radius: 16px; 
+  
+  background: var(--cream); 
+  
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  font-family: var(--font-body);
+  transition: all 0.25s var(--ease);
+}
+
+
+.dropdownTrigger:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+
+.dropdownTriggerActive {
+  background: var(--paper); 
+  border-color: var(--teal-deep);
+  box-shadow: 0 0 0 3px rgba(33, 137, 126, 0.14); 
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+  color: var(--teal-deep); 
+}
+
+.typeCopy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.typeDescription {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.3;
+  display: block; 
+}
+
+.dropdownChevron {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--ink-faint);
+  transition: transform 0.3s var(--ease);
+}
+
+.dropdownChevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 8px); 
+  left: 0;
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: slideDown 0.2s var(--ease) forwards;
+  transform-origin: top center;
+}
+
+.dropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  outline: none; 
+  font-family: var(--font-body);
+  transition: background 0.2s var(--ease);
+}
+
+.dropdownItem:hover {
+  background: var(--cream);
+}
+
+.dropdownItemActive {
+  background: rgba(137, 128, 245, 0.08); 
+}
+
+.typeCheck {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--violet);
+  color: var(--paper);
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
 .generateButton {
   margin-top: 28px;
   display: inline-flex;
@@ -371,6 +512,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 204px; 
+  overflow-y: auto;
+  margin-right: -20px;
+  padding-right: 20px;
 }
 
 .activityItem {
