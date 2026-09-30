@@ -65,6 +65,7 @@ def generate_set(request):
                 answer=problem.get("answer"),
                 solution=problem.get("solution"),
                 hint=problem.get("hint"),
+                teacher_tip=problem.get("teacherTip", ""), 
                 format=problem.get("format"),
                 topic=problem.get("topic"),
                 subtopic=problem.get("subtopic"),
@@ -95,6 +96,7 @@ def edit_question(request, pk):
         question.answer = updated_data.get("answer", question.answer)
         question.solution = updated_data.get("solution", question.solution)
         question.hint = updated_data.get("hint", question.hint)
+        question.teacher_tip = updated_data.get("teacherTip", question.teacher_tip)
         question.save()
 
         return Response(QuestionSerializer(question).data)
@@ -107,31 +109,27 @@ def edit_question(request, pk):
 def edit_set(request, pk):
     try:
         problem_set = ProblemSet.objects.get(pk=pk)
-        questions = list(
-            problem_set.questions.values(
-                "id",
-                "prompt",
-                "answer",
-                "solution",
-                "hint",
-                "format",
-            )
+        raw = problem_set.questions.values(
+            "id", "prompt", "answer", "solution", "hint", "teacher_tip", "format"
         )
+        questions = [
+            {**{k: v for k, v in q.items() if k != "teacher_tip"}, "teacherTip": q["teacher_tip"]}
+            for q in raw
+        ]
         edit_instruction = request.data.get("prompt")
 
         updated_data = edit_full_math_set(questions, edit_instruction)
 
         for updated_q in updated_data.get("questions", []):
             question = Question.objects.get(pk=updated_q["id"])
-
             question.prompt = updated_q.get("prompt", question.prompt)
             question.answer = updated_q.get("answer", question.answer)
             question.solution = updated_q.get("solution", question.solution)
             question.hint = updated_q.get("hint", question.hint)
+            question.teacher_tip = updated_q.get("teacherTip", question.teacher_tip) 
             question.save()
 
         return Response(ProblemSetSerializer(problem_set).data)
-
     except Exception as e:
         return Response({"error": str(e)}, status=500)
 
@@ -229,6 +227,7 @@ def question_alternative(request, pk):
         question.answer = alternative.get("answer", question.answer)
         question.solution = alternative.get("solution", question.solution)
         question.hint = alternative.get("hint", question.hint)
+        question.teacher_tip = alternative.get("teacherTip", question.teacher_tip) 
         question.save()
 
         return Response(QuestionSerializer(question).data)
@@ -380,11 +379,50 @@ def duplicate_set(request, pk):
             answer=question.answer,
             solution=question.solution,
             hint=question.hint,
+            teacher_tip=question.teacher_tip,
             format=question.format,
             topic=question.topic,
             subtopic=question.subtopic,
             prep_level=question.prep_level,
             difficulty=question.difficulty,
+            output_overrides=question.output_overrides,
         )
 
     return Response(ProblemSetSerializer(new_set).data)
+
+@api_view(["POST"])
+def update_question_tip(request, pk):
+    try:
+        question = Question.objects.get(pk=pk)
+    except Question.DoesNotExist:
+        return Response({"error": "Question not found"}, status=404)
+
+    question.teacher_tip = request.data.get("tip", "")
+    question.save(update_fields=["teacher_tip"])
+
+    return Response(QuestionSerializer(question).data)
+
+
+@api_view(["POST"])
+def update_set_settings(request, pk):
+    try:
+        problem_set = ProblemSet.objects.get(pk=pk)
+    except ProblemSet.DoesNotExist:
+        return Response({"error": "Set not found"}, status=404)
+
+    incoming = request.data.get("formData", {})
+    problem_set.form_data = {**(problem_set.form_data or {}), **incoming}
+    problem_set.save(update_fields=["form_data"])
+    return Response(ProblemSetSerializer(problem_set).data)
+
+
+@api_view(["POST"])
+def update_question_overrides(request, pk):
+    try:
+        question = Question.objects.get(pk=pk)
+    except Question.DoesNotExist:
+        return Response({"error": "Question not found"}, status=404)
+
+    question.output_overrides = request.data.get("outputOverrides")
+    question.save(update_fields=["output_overrides"])
+    return Response(QuestionSerializer(question).data)

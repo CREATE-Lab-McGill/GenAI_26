@@ -86,3 +86,18 @@ export const duplicateSet = async (id: string, name?: string) => {
   const response = await api.post(`sets/${id}/duplicate/`, { name });
   return response.data;
 };
+
+export const updateQuestionTip = async (id: string, tip: string) => {
+  const response = await api.post(`questions/${id}/tip/`, { tip });
+  return response.data;
+};
+
+export const updateSetSettings = async (setId: string, formData: any) => {
+  const response = await api.post(`sets/${setId}/settings/`, { formData });
+  return response.data;
+};
+
+export const updateQuestionOverrides = async (id: string, outputOverrides: any) => {
+  const response = await api.post(`questions/${id}/overrides/`, { outputOverrides });
+  return response.data;
+};

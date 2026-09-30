@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from api.views import (
     health_check, get_sets, generate_set,
-    edit_question, edit_set, save_set, delete_set, delete_question, submit_feedback, update_question_manual, question_alternative, export_word, reorder_questions, duplicate_set
+    edit_question, edit_set, save_set, delete_set, delete_question, submit_feedback, update_question_manual, question_alternative, export_word, reorder_questions, duplicate_set, update_question_tip, update_set_settings, update_question_overrides
 )
 
 urlpatterns = [
@@ -37,4 +37,7 @@ urlpatterns = [
     path("api/export-word/", export_word),
     path("api/sets/<str:pk>/reorder/", reorder_questions),
     path("api/sets/<str:pk>/duplicate/", duplicate_set),
+    path("api/questions/<str:pk>/tip/", update_question_tip),
+    path("api/sets/<str:pk>/settings/", update_set_settings),
+    path("api/questions/<str:pk>/overrides/", update_question_overrides),
 ]

@@ -6,6 +6,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 from typing import List, Optional
+import uuid
 
 from .math_validator import verify_question, verify_questions, needs_math_regeneration
 
@@ -15,12 +16,12 @@ client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
 )
 
-
 class MathQuestion(BaseModel):
     prompt: str
     answer: str
     solution: str
     hint: str
+    teacherTip: str 
     format: str
     topic: str
     subtopic: str
@@ -38,8 +39,8 @@ class EditedQuestion(BaseModel):
     answer: str
     solution: str
     hint: str
+    teacherTip: str 
     verification_expression: Optional[str] = None
-
 
 class EditedQuestionWithId(BaseModel):
     id: str
@@ -47,6 +48,7 @@ class EditedQuestionWithId(BaseModel):
     answer: str
     solution: str
     hint: str
+    teacherTip: str
     verification_expression: Optional[str] = None
 
 
@@ -64,7 +66,19 @@ class AlternativeQuestion(BaseModel):
     answer: str
     solution: str
     hint: str
+    teacherTip: str
     verification_expression: Optional[str] = None
+
+TEACHER_TIP_INSTRUCTIONS = """
+ADDITIONAL FIELD — teacherTip:
+For EACH question, write ONE short, practical teaching tip specific to THAT
+exact question (not generic advice) — e.g. a common student misconception for
+this problem, a quick way to check understanding, or a differentiation idea
+for struggling/advanced students. ONE sentence, plain English. If you mention
+any math (variables, expressions, numbers with symbols), wrap it in $...$ and
+close every $ immediately after the expression, following the same LaTeX rules
+as the other fields.
+"""
 
 LATEX_INSTRUCTIONS = """
 CRITICAL INSTRUCTIONS FOR FORMATTING AND LATEX (APPLIES TO ALL JSON FIELDS: prompt, answer, solution, hint):
@@ -214,8 +228,13 @@ def sanitize_question_fields(question: dict) -> dict:
             question[field] = fix_over_escaped_backslashes(question[field])
             question[field] = convert_literal_escapes(question[field])
             question[field] = strip_self_correction(question[field])
-            question[field] = enforce_display_fractions(question[field]) 
+            question[field] = enforce_display_fractions(question[field])
             question[field] = normalize_whitespace(question[field])
+    if "teacherTip" in question and isinstance(question["teacherTip"], str):
+        tip = question["teacherTip"]
+        tip = fix_over_escaped_backslashes(tip)
+        tip = convert_literal_escapes(tip)
+        question["teacherTip"] = normalize_whitespace(tip)
     return question
 
 
@@ -227,7 +246,7 @@ def is_valid_multiple_choice(question: dict) -> bool:
 
 
 def needs_regeneration(question: dict) -> bool:
-    for field in ("prompt", "answer", "solution", "hint"):
+    for field in ("prompt", "answer", "solution", "hint", "teacherTip"):
         text = question.get(field, "")
         if isinstance(text, str) and not has_balanced_dollars(text):
             return True
@@ -277,10 +296,11 @@ PARAMETERS:
 
 {LATEX_INSTRUCTIONS}
 {VERIFICATION_INSTRUCTIONS}
+{TEACHER_TIP_INSTRUCTIONS}
 """
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash",
+        model="gemini-3.5-flash-lite",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -331,9 +351,10 @@ def generate_math_problems(topic, prep_level, form_data):
     groups = form_data.get("questionGroups", [])
     total = sum(g.get("count", 0) for g in groups)
 
-    instructions = []
-    for g in groups:
-        instructions.append(f"- {g['count']} questions of format '{g['format']}' at '{g['difficulty']}' difficulty.")
+    instructions = [
+        f"- {g['count']} questions of format '{g['format']}' at '{g['difficulty']}' difficulty."
+        for g in groups
+    ]
     group_instructions = "\n".join(instructions)
 
     context = form_data.get("realWorldContext", "None")
@@ -356,10 +377,11 @@ You must strictly match the following quantities, formats, and difficulties:
 
 {LATEX_INSTRUCTIONS}
 {VERIFICATION_INSTRUCTIONS}
+{TEACHER_TIP_INSTRUCTIONS}
 """
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash",
+        model="gemini-3.5-flash-lite",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -369,13 +391,22 @@ You must strictly match the following quantities, formats, and difficulties:
     )
 
     result: MathProblemSet = response.parsed
+
+    if result is None:
+        raise ValueError("Gemini returned no parsed response.")
+
     data = result.model_dump()
 
     data["questions"], _ = sanitize_verify_and_flag(data["questions"])
-    data["questions"] = _regenerate_flagged_questions(data["questions"], topic, prep_level, form_data)
+
+    data["questions"] = _regenerate_flagged_questions(
+        data["questions"],
+        topic,
+        prep_level,
+        form_data,
+    )
 
     return data
-
 
 def edit_single_math_problem(question_data, edit_instruction):
     prompt = f"""
@@ -389,10 +420,11 @@ def edit_single_math_problem(question_data, edit_instruction):
 
     {LATEX_INSTRUCTIONS}
     {VERIFICATION_INSTRUCTIONS}
+    {TEACHER_TIP_INSTRUCTIONS}
     """
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash",
+        model="gemini-3.5-flash-lite",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -417,12 +449,13 @@ def edit_full_math_set(questions_list, edit_instruction):
 
     {LATEX_INSTRUCTIONS}
     {VERIFICATION_INSTRUCTIONS}
+    {TEACHER_TIP_INSTRUCTIONS}
 
     Keep the exact same "id" for each question as in the original list above.
     """
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash",
+        model="gemini-3.5-flash-lite",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.3,
@@ -465,7 +498,7 @@ def resync_answer_to_prompt(question_data: dict) -> dict:
     """
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash",
+        model="gemini-3.5-flash-lite",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2,
@@ -500,7 +533,7 @@ def resync_answer_to_prompt(question_data: dict) -> dict:
         """
 
         retry_response = client.models.generate_content(
-            model="gemini-3.5-flash",
+            model="gemini-3.5-flash-lite",
             contents=followup_prompt,
             config=types.GenerateContentConfig(
                 temperature=0.2,
@@ -539,10 +572,11 @@ def generate_alternative_question(question_data: dict) -> dict:
 
     {LATEX_INSTRUCTIONS}
     {VERIFICATION_INSTRUCTIONS}
+    {TEACHER_TIP_INSTRUCTIONS}
     """
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash",
+        model="gemini-3.5-flash-lite",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.6,
@@ -560,7 +594,7 @@ def generate_alternative_question(question_data: dict) -> dict:
     attempts = 0
     while needs_any_regeneration(alt_as_question) and attempts < MAX_REGENERATION_ATTEMPTS:
         response = client.models.generate_content(
-            model="gemini-3.5-flash",
+            model="gemini-3.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.6,
@@ -596,7 +630,7 @@ def _rewrite_explanation_for_verified_answer(question_data: dict, verified_value
     """
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash",
+        model="gemini-3.5-flash-lite",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2,

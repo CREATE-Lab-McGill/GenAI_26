@@ -112,7 +112,7 @@ const Dashboard = (): React.ReactElement => {
   const [recentSets, setRecentSets] = useState<GeneratedSet[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
 
-  const [selectedType, setSelectedType] = useState<typeof PROBLEM_TYPES[number]['key']>('problem-set');
+  const [selectedType, setSelectedType] = useState<typeof PROBLEM_TYPES[number]['key'] | null>(null);
   const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -139,11 +139,14 @@ const Dashboard = (): React.ReactElement => {
   };
 
   const handleGenerate = () => {
+    if (!selectedType) return;
     const type = PROBLEM_TYPES.find((t) => t.key === selectedType)!;
     navigate(type.route, { state: { prepLevel: selectedPrep } });
   };
 
-  const selectedTypeData = PROBLEM_TYPES.find(t => t.key === selectedType)!;
+  const selectedTypeData = selectedType
+    ? PROBLEM_TYPES.find(t => t.key === selectedType)
+    : null;
 
   return (
     <main className={styles.dashboard}>
@@ -190,18 +193,37 @@ const Dashboard = (): React.ReactElement => {
 
             <div className={styles.typeSection}>
               <span className={styles.prepLabel}>What are you generating</span>
-              
+
               <div className={styles.customDropdown} ref={dropdownRef}>
                 <button
                   type="button"
                   className={`${styles.dropdownTrigger} ${isTypeMenuOpen ? styles.dropdownTriggerActive : ''}`}
                   onClick={() => setIsTypeMenuOpen(!isTypeMenuOpen)}
                 >
-                  <span className={styles.prepIcon} aria-hidden="true">{selectedTypeData.icon}</span>
-                  <div className={styles.typeCopy}>
-                    <span className={styles.prepName}>{selectedTypeData.label}</span>
-                    <span className={styles.typeDescription}>{selectedTypeData.description}</span>
-                  </div>
+                  {selectedTypeData ? (
+                    <>
+                      <span className={styles.prepIcon} aria-hidden="true">{selectedTypeData.icon}</span>
+                      <div className={styles.typeCopy}>
+                        <span className={styles.prepName}>{selectedTypeData.label}</span>
+                        <span className={styles.typeDescription}>{selectedTypeData.description}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className={styles.prepIcon} aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
+                          <circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                          <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                          <circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                        </svg>
+                      </span>
+                      <div className={styles.typeCopy}>
+                        <span className={styles.prepName} style={{ color: 'var(--ink-soft)' }}>
+                          Select problem type
+                        </span>
+                      </div>
+                    </>
+                  )}
                   <span className={`${styles.dropdownChevron} ${isTypeMenuOpen ? styles.chevronOpen : ''}`} aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                       <path d="M6 9l6 6 6-6" />
@@ -237,8 +259,17 @@ const Dashboard = (): React.ReactElement => {
               </div>
             </div>
 
-            <button className={styles.generateButton} onClick={handleGenerate}>
-              Generate {selectedTypeData.label.toLowerCase()} for {selectedPrep} <span aria-hidden="true">→</span>
+            <button 
+              className={styles.generateButton} 
+              onClick={handleGenerate}
+              disabled={!selectedType}
+              style={{ opacity: !selectedType ? 0.5 : 1, cursor: !selectedType ? 'not-allowed' : 'pointer' }}
+            >
+              {selectedTypeData 
+                ? `Generate ${selectedTypeData.label.toLowerCase()} for ${selectedPrep}` 
+                : `Select a type to generate for ${selectedPrep}`
+              } 
+              <span aria-hidden="true">→</span>
             </button>
           </div>
         </div>
