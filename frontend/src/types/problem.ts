@@ -41,14 +41,13 @@ export const DIFFICULTIES: { value: Difficulty; helper: string }[] = [
   { value: 'Mixed', helper: 'A balanced mix of all difficulty levels.' },
 ];
 
-export type ScaffoldingLevel = 'None' | 'Hints' | 'Prompting' | 'Worked Example' | 'Skeletal Frame';
+export type ScaffoldingLevel = 'None' | 'Hints' | 'Prompting' | 'Worked Example';
 
 export const SCAFFOLDING_LEVELS: ScaffoldingLevel[] = [
   'None',
   'Hints',
   'Prompting',
   'Worked Example',
-  'Skeletal Frame',
 ];
 
 export interface QuestionGroup {
@@ -58,13 +57,14 @@ export interface QuestionGroup {
   difficulty: Difficulty;
 }
 
-export type OutputInclude = 'Instructions' | 'Answer key' | 'Worked solutions' | 'Hints';
+export type OutputInclude = 'Instructions' | 'Answer key' | 'Worked solutions' | 'Hints' | 'Teacher tip';
 
 export const OUTPUT_INCLUDES: OutputInclude[] = [
   'Instructions',
   'Answer key',
   'Worked solutions',
   'Hints',
+  'Teacher tip',
 ];
 
 export type DisplayOption = 'Answer space' | 'Extra room for solution' | 'Graph / diagram space' | 'Difficulty tag';
@@ -113,7 +113,7 @@ export const initialGeneratorForm: GeneratorFormData = {
     { id: 'group_init_1', count: 5, format: 'Word Problem', difficulty: 'Medium' }
   ],
 
-  outputIncludes: ['Instructions', 'Answer key'],
+  outputIncludes: ['Instructions', 'Answer key', 'Teacher tip'],
   displayOptions: ['Answer space', 'Difficulty tag'],
   questionOrder: 'By topic',
   groupBy: 'None',
@@ -131,6 +131,7 @@ export interface GeneratedQuestion {
   answer: string;
   solution: string;
   hint: string;
+  teacherTip?: string; 
 
   format?: ProblemFormat;
   
@@ -147,7 +148,7 @@ export interface GeneratedSet {
   name: string;
   topic: string;
   createdAt: string;
-  prepLevel: PrepLevel;
+  prepLevel: PrepLevel
   formData: GeneratorFormData;
   questions: GeneratedQuestion[];
   isSaved?: boolean;
