@@ -9,7 +9,7 @@ import type {
   OutputInclude,
   DisplayOption,
 } from '../types/problem';
-import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument, reorderQuestions, duplicateSet } from '../api/client';
+import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument, reorderQuestions, duplicateSet, updateQuestionTip, updateQuestionOverrides, updateSetSettings } from '../api/client';
 import styles from '../styles/OutputPageStyles.module.css';
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -25,7 +25,7 @@ import GraphSettingsEditor from '../components/GraphSettingsEditor';
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 
 const STUDENT_INCLUDE_OPTIONS: OutputInclude[] = ['Instructions', 'Hints'];
-const TEACHER_INCLUDE_OPTIONS: OutputInclude[] = ['Answer key', 'Worked solutions'];
+const TEACHER_INCLUDE_OPTIONS: OutputInclude[] = ['Answer key', 'Worked solutions', 'Teacher tip'];
 const STUDENT_DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
   'Graph / diagram space',
@@ -87,6 +87,10 @@ const ProblemOutput = (): React.ReactElement => {
   const [settingsQuestionId, setSettingsQuestionId] = useState<string | null>(null);
   const questionSettingsRef = useRef<HTMLDivElement | null>(null);
 
+  const [editingTipId, setEditingTipId] = useState<string | null>(null); 
+  const [tipDraft, setTipDraft] = useState('');
+  const [savingTipId, setSavingTipId] = useState<string | null>(null);
+
   useEffect(() => {
     const raw = localStorage.getItem(LAST_SET_KEY);
     if (raw) {
@@ -131,20 +135,45 @@ const ProblemOutput = (): React.ReactElement => {
     localStorage.setItem(LAST_SET_KEY, JSON.stringify(updatedSet));
   };
 
+  const persistSetSettings = (updatedSet: GeneratedSet) => {
+    if (!updatedSet.id) return;
+    updateSetSettings(updatedSet.id, updatedSet.formData).catch((e) =>
+      console.error("Failed to save set settings:", e)
+    );
+  };
+
+  const overridesTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const persistQuestionOverrides = (updatedSet: GeneratedSet, questionId: string, debounce = false) => {
+    const send = () => {
+      const q = updatedSet.questions.find((x) => x.id === questionId);
+      updateQuestionOverrides(questionId, q?.outputOverrides ?? null).catch((e) =>
+        console.error("Failed to save question overrides:", e)
+      );
+    };
+    if (!debounce) return send();
+    clearTimeout(overridesTimers.current[questionId]);
+    overridesTimers.current[questionId] = setTimeout(send, 500);
+  };
+
   const toggleOutputInclude = (option: OutputInclude) => {
     const current = set!.formData?.outputIncludes || [];
-    updateLocalStorage({
+    const updated = {
       ...set!,
-      formData: { ...set!.formData, outputIncludes: toggleInArray(current, option) }
-    });
+      formData: { ...set!.formData, outputIncludes: toggleInArray(current, option) },
+    };
+    updateLocalStorage(updated);
+    persistSetSettings(updated);
   };
 
   const toggleDisplayOption = (option: DisplayOption) => {
     const current = set!.formData?.displayOptions || [];
-    updateLocalStorage({
+    const updated = {
       ...set!,
-      formData: { ...set!.formData, displayOptions: toggleInArray(current, option) }
-    });
+      formData: { ...set!.formData, displayOptions: toggleInArray(current, option) },
+    };
+    updateLocalStorage(updated);
+    persistSetSettings(updated);
   };
 
   const getEffectiveIncludes = (q: GeneratedQuestion, setIncludes: OutputInclude[]): OutputInclude[] =>
@@ -154,7 +183,7 @@ const ProblemOutput = (): React.ReactElement => {
     q.outputOverrides?.displayOptions ?? setDisplay;
 
   const hasCustomSettings = (q: GeneratedQuestion): boolean =>
-    !!q.outputOverrides?.outputIncludes || !!q.outputOverrides?.displayOptions || 
+    !!q.outputOverrides?.outputIncludes || !!q.outputOverrides?.displayOptions ||
     !!q.outputOverrides?.graphConfig;
 
   const arraysEqualUnordered = <T,>(a: T[], b: T[]): boolean => {
@@ -179,13 +208,13 @@ const ProblemOutput = (): React.ReactElement => {
         newOverrides.outputIncludes = updated;
       }
 
-      const hasAnyOverride = !!newOverrides.outputIncludes || !!newOverrides.displayOptions;
-      return {
-        ...item,
-        outputOverrides: hasAnyOverride ? newOverrides : undefined,
-      };
+      const hasAnyOverride =
+        !!newOverrides.outputIncludes || !!newOverrides.displayOptions || !!newOverrides.graphConfig;
+      return { ...item, outputOverrides: hasAnyOverride ? newOverrides : undefined };
     });
-    updateLocalStorage({ ...set, questions: updatedQuestions });
+    const newSet = { ...set, questions: updatedQuestions };
+    updateLocalStorage(newSet);
+    persistQuestionOverrides(newSet, q.id);
   };
 
   const updateGraphConfig = (q: GeneratedQuestion, newConfig: Partial<GraphConfig>) => {
@@ -194,22 +223,16 @@ const ProblemOutput = (): React.ReactElement => {
     const currentConfig = q.outputOverrides?.graphConfig
       ?? set.formData?.graphConfig
       ?? DEFAULT_GRAPH_CONFIG;
-
     const updatedConfig = { ...currentConfig, ...newConfig };
 
-    const updatedQuestions = questions.map((item) => {
-      if (item.id !== q.id) return item;
-
-      return {
-        ...item,
-        outputOverrides: {
-          ...item.outputOverrides,
-          graphConfig: updatedConfig
-        }
-      };
-    });
-
-    updateLocalStorage({ ...set, questions: updatedQuestions });
+    const updatedQuestions = questions.map((item) =>
+      item.id !== q.id
+        ? item
+        : { ...item, outputOverrides: { ...item.outputOverrides, graphConfig: updatedConfig } }
+    );
+    const newSet = { ...set, questions: updatedQuestions };
+    updateLocalStorage(newSet);
+    persistQuestionOverrides(newSet, q.id, true);
   };
 
   const updateGlobalGraphConfig = (newConfig: Partial<GraphConfig>) => {
@@ -218,13 +241,9 @@ const ProblemOutput = (): React.ReactElement => {
     const currentConfig = set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG;
     const updatedConfig = { ...currentConfig, ...newConfig };
 
-    updateLocalStorage({
-      ...set,
-      formData: {
-        ...set.formData,
-        graphConfig: updatedConfig
-      }
-    });
+    const newSet = { ...set, formData: { ...set.formData, graphConfig: updatedConfig } };
+    updateLocalStorage(newSet);
+    persistSetSettings(newSet);
   };
 
   const toggleQuestionDisplay = (q: GeneratedQuestion, option: DisplayOption, setDisplay: DisplayOption[]) => {
@@ -243,21 +262,50 @@ const ProblemOutput = (): React.ReactElement => {
         newOverrides.displayOptions = updated;
       }
 
-      const hasAnyOverride = !!newOverrides.outputIncludes || !!newOverrides.displayOptions;
-      return {
-        ...item,
-        outputOverrides: hasAnyOverride ? newOverrides : undefined,
-      };
+      const hasAnyOverride =
+        !!newOverrides.outputIncludes || !!newOverrides.displayOptions || !!newOverrides.graphConfig;
+      return { ...item, outputOverrides: hasAnyOverride ? newOverrides : undefined };
     });
-    updateLocalStorage({ ...set, questions: updatedQuestions });
+    const newSet = { ...set, questions: updatedQuestions };
+    updateLocalStorage(newSet);
+    persistQuestionOverrides(newSet, q.id);
   };
 
-  const resetQuestionOverrides = (q: GeneratedQuestion) => {
+    const resetQuestionOverrides = (q: GeneratedQuestion) => {
     if (!set) return;
     const updatedQuestions = questions.map((item) =>
       item.id === q.id ? { ...item, outputOverrides: undefined } : item
     );
-    updateLocalStorage({ ...set, questions: updatedQuestions });
+    const newSet = { ...set, questions: updatedQuestions };
+    updateLocalStorage(newSet);
+    persistQuestionOverrides(newSet, q.id);
+  };
+
+  const startEditTip = (q: GeneratedQuestion) => {
+    setEditingTipId(q.id);
+    setTipDraft(q.teacherTip || '');
+  };
+
+  const cancelEditTip = () => {
+    setEditingTipId(null);
+    setTipDraft('');
+  };
+
+  const saveTip = async (q: GeneratedQuestion) => {
+    if (!set) return;
+    setSavingTipId(q.id);
+    try {
+      const updated = await updateQuestionTip(q.id, tipDraft);
+      const updatedQuestions = questions.map((item) =>
+        item.id === q.id ? { ...item, teacherTip: updated.teacherTip } : item
+      );
+      updateLocalStorage({ ...set, questions: updatedQuestions });
+      setEditingTipId(null);
+    } catch (error) {
+      console.error("Failed to save teacher tip:", error);
+    } finally {
+      setSavingTipId(null);
+    }
   };
 
   if (!set) {
@@ -703,6 +751,69 @@ const ProblemOutput = (): React.ReactElement => {
                         <div className={styles.hintBox}>
                           <strong>Hint:</strong> <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{q.hint}</ReactMarkdown>
                         </div>
+                      )}
+                      {effIncludes.includes('Teacher tip') && (
+                        <div className={styles.teacherTipBox}>
+                          <div className={styles.teacherTipBoxHeader}>
+                            <span className={styles.teacherTipBoxLabel}>
+                              Teacher tip <span className={styles.teacherTipBoxNote}></span>
+                            </span>
+                            {editingTipId !== q.id && (
+                              <button
+                                type="button"
+                                className={styles.teacherTipEditIcon}
+                                onClick={() => startEditTip(q)}
+                                aria-label="Edit teacher tip"
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+
+                          {editingTipId === q.id ? (
+                            <div className={styles.teacherTipEdit}>
+                              <textarea
+                                rows={2}
+                                value={tipDraft}
+                                onChange={(e) => setTipDraft(e.target.value)}
+                                autoFocus
+                                placeholder="Write a quick tip for this question..."
+                              />
+                              <div className={styles.teacherTipEditActions}>
+                                <button
+                                  className={styles.secondaryButton}
+                                  onClick={cancelEditTip}
+                                  disabled={savingTipId === q.id}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  className={styles.primaryButton}
+                                  onClick={() => saveTip(q)}
+                                  disabled={savingTipId === q.id}
+                                >
+                                  {savingTipId === q.id ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className={styles.teacherTipBoxText}
+                              onClick={() => startEditTip(q)}
+                            >
+                              {q.teacherTip ? (
+                                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                  {q.teacherTip}
+                                </ReactMarkdown>
+                              ) : (
+                                <em>No tip yet - click to write one</em>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
                       )}
 
                       {effDisplay.includes('Graph / diagram space') && (

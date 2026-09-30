@@ -31,6 +31,8 @@ class Question(models.Model):
     answer = models.TextField(blank=True)
     solution = models.TextField(blank=True)
     hint = models.TextField(blank=True)
+    teacher_tip = models.TextField(blank=True, default="")
+    output_overrides = models.JSONField(blank=True, null=True, default=None)
 
     format = models.CharField(max_length=100, blank=True, null=True)
     topic = models.CharField(max_length=255, blank=True, null=True)

@@ -462,7 +462,7 @@ const Generator = (): React.ReactElement => {
                       <InfoTooltip text="These settings apply only to your copy and are not shown to students. They include the final answers and, if selected, the complete worked out solutions." />
                     </span>
                     <div className={styles.checkGrid}>
-                      {['Answer key', 'Worked solutions'].map((o) => (
+                      {['Answer key', 'Worked solutions', 'Teacher tip'].map((o) => (
                         <label key={o} className={styles.checkCard}>
                           <input
                             type="checkbox"

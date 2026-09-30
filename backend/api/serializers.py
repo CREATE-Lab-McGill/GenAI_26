@@ -3,14 +3,16 @@ from .models import ProblemSet, Question, Feedback
 
 class QuestionSerializer(serializers.ModelSerializer):
     prepLevel = serializers.CharField(source='prep_level', required=False)
+    teacherTip = serializers.CharField(source='teacher_tip', required=False, allow_blank=True)
+    outputOverrides = serializers.JSONField(source='output_overrides', required=False, allow_null=True)
 
     class Meta:
         model = Question
         fields = [
-            "id", "prompt", "answer", "solution", "hint",
+            "id", "prompt", "answer", "solution", "hint", "teacherTip",
             "format", "topic", "subtopic", "prepLevel", "difficulty",
+            "outputOverrides",
         ]
-
 
 class ProblemSetSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
@@ -24,7 +26,7 @@ class ProblemSetSerializer(serializers.ModelSerializer):
         model = ProblemSet
         fields = [
             "id", "name", "topic", "difficulty", "prepLevel",
-            "createdAt", "savedAt", "isSaved", "formData", "questions",
+            "createdAt", "savedAt", "isSaved", "formData", "questions", 
         ]
 
 class FeedbackSerializer(serializers.ModelSerializer):
