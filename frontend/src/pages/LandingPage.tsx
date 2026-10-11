@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styles from '../styles/LandingPageStyles.module.css';
 import TutorialModal from '../components/Tutorial';
 import { APP_TOUR_SLIDES } from '../services/tourContent';
+import LogoBanner from '../components/LogoBanner';
 
 interface Step {
   n: string;
@@ -78,10 +79,7 @@ const LandingPage = (): React.ReactElement => {
     <div className={styles.landingPage}>
       <TutorialModal tourKey="app_intro_v1" slides={APP_TOUR_SLIDES} />
       <header className={styles.landingNav}>
-        <Link className={styles.brand} to="/" aria-label="MathCraft home">
-          <span className={styles.brandMark}>M</span>
-          <span>MathCraft</span>
-        </Link>
+        <LogoBanner />
 
         <nav className={styles.landingNavLinks} aria-label="Primary">
           <a href="#how-it-works">How it works</a>
@@ -107,7 +105,7 @@ const LandingPage = (): React.ReactElement => {
               <em>classroom-ready</em> problem set.
             </h1>
             <p>
-              Tell MathCraft what your students are learning, choose the difficulty, problem formats, and support level, then generate an editable problem set tailored to your classroom.
+              Tell CREATEMath what your students are learning, choose the difficulty, problem formats, and support level, then generate an editable problem set tailored to your classroom.
             </p>
             <div className={styles.heroActions}>
               <button
@@ -175,7 +173,7 @@ const LandingPage = (): React.ReactElement => {
 
         <section className={styles.ctaBand}>
           <h2>Your next problem set is a few clicks away.</h2>
-          <p>Choose your topic, customize the settings, and let MathCraft generate your next problem set.</p>
+          <p>Choose your topic, customize the settings, and let CREATEMath generate your next problem set.</p>
           <button
             className={cx(styles.primaryButton, styles.large, styles.onDark)}
             onClick={() => navigate('/dashboard')}
@@ -186,10 +184,7 @@ const LandingPage = (): React.ReactElement => {
       </main>
 
       <footer className={styles.landingFooter}>
-        <div className={cx(styles.brand, styles.small)}>
-          <span className={styles.brandMark}>M</span>
-          <span>MathCraft</span>
-        </div>
+        <LogoBanner />
         <p>Built for math instructors at every level.</p>
       </footer>
     </div>
