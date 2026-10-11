@@ -21,6 +21,7 @@ import { GraphCanvas } from '../components/GraphCanvas';
 import { toPng } from 'html-to-image';
 import { DEFAULT_GRAPH_CONFIG, type GraphConfig } from '../types/problem';
 import GraphSettingsEditor from '../components/GraphSettingsEditor';
+import LogoBanner from '../components/LogoBanner';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 
@@ -521,10 +522,7 @@ const ProblemOutput = (): React.ReactElement => {
       className={`${styles.outputPage} ${printMode === 'student' ? styles.printAsStudent : styles.printAsTeacher}`}
     >
       <header className={styles.topbar}>
-        <a className={styles.brand} href="/" aria-label="MathCraft home">
-          <span className={styles.brandMark}>M</span>
-          <span>MathCraft</span>
-        </a>
+        <LogoBanner />
         <ProfileButton />
       </header>
 

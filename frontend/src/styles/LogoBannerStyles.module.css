@@ -1,0 +1,16 @@
+.banner {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.logo {
+  height: 62px;    
+  width: auto;       
+  display: block;
+  object-fit: contain; 
+}
+
+@media (max-width: 600px) {
+  .logo { height: 32px; }
+}

@@ -22,6 +22,7 @@ import {
 } from '../types/problem';
 import styles from '../styles/GeneratorPageStyles.module.css';
 import { CURRICULUM_DATA } from '../services/curriculumData';
+import LogoBanner from '../components/LogoBanner';
 
 const steps: StepDef[] = [
   { number: 1, title: 'Scope & alignment' },
@@ -204,10 +205,7 @@ const SituationalGenerator = (): React.ReactElement => {
   return (
     <main className={`${styles.generatorPage} ${styles[`font-${fontSize}`]}`}>
       <header className={styles.topbar}>
-        <a className={styles.brand} href="/" aria-label="MathCraft home">
-          <span className={styles.brandMark}>M</span>
-          <span>MathCraft</span>
-        </a>
+        <LogoBanner />
         <div className={styles.topbarActions}>
           <div className={styles.toolDock}>
             <div className={styles.fontControls} aria-label="Text size">
