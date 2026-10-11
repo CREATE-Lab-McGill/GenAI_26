@@ -9,8 +9,13 @@ from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .models import ProblemSet, Question, Feedback
-from .serializers import ProblemSetSerializer, QuestionSerializer, FeedbackSerializer
+from .models import ProblemSet, Question, Feedback, Collection
+from .serializers import (
+    ProblemSetSerializer,
+    QuestionSerializer,
+    FeedbackSerializer,
+    CollectionSerializer,
+)
 from .services.llm import (
     generate_math_problems,
     edit_single_math_problem,
@@ -141,11 +146,47 @@ def save_set(request, pk):
     except ProblemSet.DoesNotExist:
         return Response({"error": "Set not found"}, status=404)
 
+    collection_id = request.data.get("collectionId")
+    if collection_id:
+        try:
+            problem_set.collection = Collection.objects.get(pk=collection_id)
+        except Collection.DoesNotExist:
+            return Response({"error": "Collection not found"}, status=404)
+    else:
+        problem_set.collection = None
+
     problem_set.is_saved = True
     problem_set.saved_at = timezone.now()
     problem_set.save()
 
     return Response(ProblemSetSerializer(problem_set).data)
+
+
+@api_view(["GET"])
+def get_collections(request):
+    collections = Collection.objects.all()
+    return Response(CollectionSerializer(collections, many=True).data)
+
+
+@api_view(["POST"])
+def create_collection(request):
+    name = (request.data.get("name") or "").strip()
+    if not name:
+        return Response({"error": "Name is required"}, status=400)
+
+    collection = Collection.objects.create(id=str(uuid.uuid4()), name=name)
+    return Response(CollectionSerializer(collection).data, status=201)
+
+
+@api_view(["DELETE"])
+def delete_collection(request, pk):
+    try:
+        collection = Collection.objects.get(pk=pk)
+    except Collection.DoesNotExist:
+        return Response({"error": "Collection not found"}, status=404)
+
+    collection.delete()
+    return Response(status=204)
 
 
 @api_view(["DELETE"])

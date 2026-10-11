@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ProblemSet, Question, Feedback
+from .models import ProblemSet, Question, Feedback, Collection
 
 class QuestionSerializer(serializers.ModelSerializer):
     prepLevel = serializers.CharField(source='prep_level', required=False)
@@ -14,6 +14,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             "outputOverrides",
         ]
 
+
 class ProblemSetSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
     prepLevel = serializers.CharField(source='prep_level', required=False)
@@ -21,13 +22,28 @@ class ProblemSetSerializer(serializers.ModelSerializer):
     savedAt = serializers.DateTimeField(source='saved_at', read_only=True, required=False)
     isSaved = serializers.BooleanField(source='is_saved', required=False)
     formData = serializers.JSONField(source='form_data', required=False)
+    collectionId = serializers.CharField(source='collection_id', read_only=True, allow_null=True)
 
     class Meta:
         model = ProblemSet
         fields = [
             "id", "name", "topic", "difficulty", "prepLevel",
-            "createdAt", "savedAt", "isSaved", "formData", "questions", 
+            "createdAt", "savedAt", "isSaved", "formData", "questions",
+            "collectionId",
         ]
+
+
+class CollectionSerializer(serializers.ModelSerializer):
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    setCount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Collection
+        fields = ["id", "name", "createdAt", "setCount"]
+
+    def get_setCount(self, obj):
+        return obj.sets.filter(is_saved=True).count()
+
 
 class FeedbackSerializer(serializers.ModelSerializer):
     createdAt = serializers.DateTimeField(source='created_at', read_only=True)

@@ -8,8 +8,9 @@ import type {
   GeneratedSet,
   OutputInclude,
   DisplayOption,
+  Collection,
 } from '../types/problem';
-import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument, reorderQuestions, duplicateSet, updateQuestionTip, updateQuestionOverrides, updateSetSettings } from '../api/client';
+import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument, reorderQuestions, duplicateSet, updateQuestionTip, updateQuestionOverrides, updateSetSettings, getCollections, createCollection } from '../api/client';
 import styles from '../styles/OutputPageStyles.module.css';
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -74,6 +75,14 @@ const ProblemOutput = (): React.ReactElement => {
   const [pendingDelete, setPendingDelete] = useState<GeneratedQuestion | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState('');
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [isCreatingCollection, setIsCreatingCollection] = useState(false);
+
+  const [isCollectionMenuOpen, setIsCollectionMenuOpen] = useState(false);
+  const collectionDropdownRef = useRef<HTMLDivElement | null>(null);
+
   const [printMode] = useState<PrintMode>('student');
   const [showSetMenu, setShowSetMenu] = useState(false);
   const setMenuRef = useRef<HTMLDivElement | null>(null);
@@ -98,7 +107,14 @@ const ProblemOutput = (): React.ReactElement => {
       setSet(parsed);
       setQuestions(parsed.questions);
       setSetName(parsed.name || parsed.topic || '');
+      setSelectedCollectionId(parsed.collectionId || '');
     }
+  }, []);
+
+  useEffect(() => {
+    getCollections()
+      .then((data: Collection[]) => setCollections(data))
+      .catch((error) => console.error('Failed to load collections:', error));
   }, []);
 
   useEffect(() => {
@@ -119,6 +135,20 @@ const ProblemOutput = (): React.ReactElement => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (questionSettingsRef.current && !questionSettingsRef.current.contains(e.target as Node)) {
         setSettingsQuestionId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (collectionDropdownRef.current && !collectionDropdownRef.current.contains(e.target as Node)) {
+        setIsCollectionMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -437,12 +467,31 @@ const ProblemOutput = (): React.ReactElement => {
     setDragOverIndex(null);
   };
 
+  const handleCreateCollection = async () => {
+    const name = newCollectionName.trim();
+    if (!name) return;
+    setIsCreatingCollection(true);
+    try {
+      const created: Collection = await createCollection(name);
+      setCollections((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setSelectedCollectionId(created.id);
+      setNewCollectionName('');
+    } catch (error) {
+      console.error("Failed to create collection:", error);
+    } finally {
+      setIsCreatingCollection(false);
+    }
+  };
+
   const handleSaveSet = async () => {
     try {
-      if (setName.trim() && setName !== set.name) {
-        updateLocalStorage({ ...set, name: setName.trim() });
-      }
-      await saveSet(set.id);
+      const saved = await saveSet(set.id, selectedCollectionId || null);
+      updateLocalStorage({
+        ...set,
+        name: setName.trim() || set.name,
+        isSaved: true,
+        collectionId: saved?.collectionId ?? (selectedCollectionId || null),
+      });
       setShowSaveModal(false);
       setSaveNotice('Saved to your sets ✓');
       setTimeout(() => setSaveNotice(''), 2200);
@@ -1090,7 +1139,7 @@ const ProblemOutput = (): React.ReactElement => {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <h3>Ready to save!</h3>
             <p className={styles.modalBody}>
-              Confirm the name for this set before saving it to your profile.
+              Confirm the name for this set and choose where to keep it.
             </p>
             <input
               className={styles.modalTextarea}
@@ -1098,6 +1147,84 @@ const ProblemOutput = (): React.ReactElement => {
               onChange={(e) => setSetName(e.target.value)}
               placeholder="Set name"
             />
+
+            <div className={styles.customDropdown} ref={collectionDropdownRef} style={{ marginTop: '12px' }}>
+              <button
+                type="button"
+                className={`${styles.dropdownTrigger} ${isCollectionMenuOpen ? styles.dropdownTriggerActive : ''}`}
+                onClick={() => setIsCollectionMenuOpen(!isCollectionMenuOpen)}
+              >
+                <div className={styles.typeCopy}>
+                  <span className={styles.prepName}>
+                    {selectedCollectionId
+                      ? collections.find(c => c.id === selectedCollectionId)?.name || 'No collection'
+                      : 'No collection'}
+                  </span>
+                </div>
+                <span className={`${styles.dropdownChevron} ${isCollectionMenuOpen ? styles.chevronOpen : ''}`} aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </span>
+              </button>
+
+              {isCollectionMenuOpen && (
+                <div className={styles.dropdownMenu}>
+                  <button
+                    type="button"
+                    className={`${styles.dropdownItem} ${!selectedCollectionId ? styles.dropdownItemActive : ''}`}
+                    onClick={() => {
+                      setSelectedCollectionId('');
+                      setIsCollectionMenuOpen(false);
+                    }}
+                  >
+                    <div className={styles.typeCopy}>
+                      <span className={styles.prepName}>No collection</span>
+                    </div>
+                    {!selectedCollectionId && <span className={styles.typeCheck}>✓</span>}
+                  </button>
+                  
+                  {collections.map((c) => {
+                    const isActive = selectedCollectionId === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`${styles.dropdownItem} ${isActive ? styles.dropdownItemActive : ''}`}
+                        onClick={() => {
+                          setSelectedCollectionId(c.id);
+                          setIsCollectionMenuOpen(false);
+                        }}
+                      >
+                        <div className={styles.typeCopy}>
+                          <span className={styles.prepName}>{c.name}</span>
+                        </div>
+                        {isActive && <span className={styles.typeCheck}>✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <input
+                className={styles.modalTextarea}
+                value={newCollectionName}
+                onChange={(e) => setNewCollectionName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateCollection(); }}
+                placeholder="Or create a new collection"
+                style={{ flex: 1 }}
+              />
+              <button
+                className={styles.secondaryButton}
+                onClick={handleCreateCollection}
+                disabled={!newCollectionName.trim() || isCreatingCollection}
+              >
+                {isCreatingCollection ? 'Adding...' : 'Add'}
+              </button>
+            </div>
+
             <div className={styles.modalActions}>
               <button className={styles.secondaryButton} onClick={() => setShowSaveModal(false)}>Cancel</button>
               <button className={styles.primaryButton} onClick={handleSaveSet} disabled={!setName.trim()}>Confirm Save</button>

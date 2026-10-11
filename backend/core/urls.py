@@ -18,7 +18,10 @@ from django.contrib import admin
 from django.urls import path
 from api.views import (
     health_check, get_sets, generate_set,
-    edit_question, edit_set, save_set, delete_set, delete_question, submit_feedback, update_question_manual, question_alternative, export_word, reorder_questions, duplicate_set, update_question_tip, update_set_settings, update_question_overrides
+    edit_question, edit_set, save_set, delete_set, delete_question, submit_feedback,
+    update_question_manual, question_alternative, export_word, reorder_questions,
+    duplicate_set, update_question_tip, update_set_settings, update_question_overrides,
+    get_collections, create_collection, delete_collection,
 )
 
 urlpatterns = [
@@ -40,4 +43,7 @@ urlpatterns = [
     path("api/questions/<str:pk>/tip/", update_question_tip),
     path("api/sets/<str:pk>/settings/", update_set_settings),
     path("api/questions/<str:pk>/overrides/", update_question_overrides),
+    path("api/collections/", get_collections),
+    path("api/collections/create/", create_collection),
+    path("api/collections/<str:pk>/", delete_collection),
 ]

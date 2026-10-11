@@ -153,6 +153,14 @@ export interface GeneratedSet {
   questions: GeneratedQuestion[];
   isSaved?: boolean;
   versionOf?: string;
+  collectionId?: string | null;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  createdAt: string;
+  setCount: number;
 }
 
 export interface TeacherProfile {

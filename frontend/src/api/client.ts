@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { GeneratorFormData } from "../types/problem";
+import type { GeneratorFormData, Collection } from "../types/problem";
 import type { FeedbackPayload, FeedbackEntry } from "../types/feedback";
 
 const api = axios.create({
@@ -32,8 +32,8 @@ export const editSetWithAi = async (setId: string, prompt: string) => {
   return response.data;
 };
 
-export const saveSet = async (id: string) => {
-  const response = await api.post(`sets/${id}/save/`);
+export const saveSet = async (id: string, collectionId?: string | null) => {
+  const response = await api.post(`sets/${id}/save/`, { collectionId: collectionId ?? null });
   return response.data;
 };
 
@@ -99,5 +99,20 @@ export const updateSetSettings = async (setId: string, formData: any) => {
 
 export const updateQuestionOverrides = async (id: string, outputOverrides: any) => {
   const response = await api.post(`questions/${id}/overrides/`, { outputOverrides });
+  return response.data;
+};
+
+export const getCollections = async (): Promise<Collection[]> => {
+  const response = await api.get("collections/");
+  return response.data;
+};
+
+export const createCollection = async (name: string): Promise<Collection> => {
+  const response = await api.post("collections/create/", { name });
+  return response.data;
+};
+
+export const deleteCollection = async (id: string) => {
+  const response = await api.delete(`collections/${id}/`);
   return response.data;
 };

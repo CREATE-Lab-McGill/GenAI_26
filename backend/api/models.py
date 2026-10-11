@@ -1,5 +1,17 @@
 from django.db import models
 
+class Collection(models.Model):
+    id = models.CharField(max_length=100, primary_key=True)
+    name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class ProblemSet(models.Model):
     id = models.CharField(max_length=100, primary_key=True)
     name = models.CharField(max_length=255, blank=True, null=True)
@@ -15,6 +27,10 @@ class ProblemSet(models.Model):
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="versions"
     )
     version_label = models.CharField(max_length=100, blank=True, null=True)
+
+    collection = models.ForeignKey(
+        Collection, null=True, blank=True, on_delete=models.SET_NULL, related_name="sets"
+    )
 
     class Meta:
         ordering = ['-created_at']
@@ -49,10 +65,10 @@ class Question(models.Model):
 class Feedback(models.Model):
     id = models.CharField(max_length=100, primary_key=True)
     message = models.TextField()
-    rating = models.CharField(max_length=20, blank=True, null=True) 
-    page = models.CharField(max_length=100)         
-    section = models.CharField(max_length=100, blank=True, null=True)  
-    metadata = models.JSONField(blank=True, null=True, default=dict) 
+    rating = models.CharField(max_length=20, blank=True, null=True)
+    page = models.CharField(max_length=100)
+    section = models.CharField(max_length=100, blank=True, null=True)
+    metadata = models.JSONField(blank=True, null=True, default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -9,8 +9,6 @@ import FeedbackButton from '../components/Feedback';
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 const DEFAULTS_KEY = 'mathcraft_generator_defaults';
 
-type Tab = 'history' | 'sets';
-
 type MathLevel = 'Low' | 'Medium' | 'High';
 type Pathway = 'CST' | 'TS' | 'SN';
 
@@ -77,11 +75,6 @@ const icons = {
       <path d="M8 13h8M8 16.5h5" />
     </svg>
   ),
-  bookmark: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
-      <path d="M6 4h12v16l-6-4-6 4Z" />
-    </svg>
-  ),
   plus: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
       <path d="M12 5v14M5 12h14" />
@@ -100,7 +93,6 @@ const Account = (): React.ReactElement => {
 
   const [sets, setSets] = useState<GeneratedSet[]>([]);
   const [loadingSets, setLoadingSets] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>('history');
   const [hasSavedDefaults, setHasSavedDefaults] = useState(false);
 
   const [prepProfiles, setPrepProfiles] = useState<PrepProfile[]>(INITIAL_PREP_PROFILES);
@@ -168,7 +160,32 @@ const Account = (): React.ReactElement => {
     }
   };
 
-  const activeList = activeTab === 'history' ? history : savedSets;
+  const renderHistory = () => {
+    if (loadingSets) return <p className={styles.emptyStateCenter}>Loading your sets…</p>;
+    if (history.length === 0) return <p className={styles.emptyStateCenter}>No problems generated yet.</p>;
+    return (
+      <div className={styles.listScroll}>
+        <ul className={styles.list}>
+          {history.map((item) => (
+            <li key={item.id} className={styles.listItem}>
+              <span className={styles.listIcon} aria-hidden="true">{icons.document}</span>
+              <button className={styles.listItemMain} onClick={() => openSet(item)}>
+                <strong>{item.name || item.topic || 'Math problem'}</strong>
+                <span>{new Date(item.createdAt).toLocaleDateString()} · {item.prepLevel}</span>
+              </button>
+              <button
+                className={styles.deleteIcon}
+                onClick={() => handleDeleteSet(item.id)}
+                aria-label="Delete set"
+              >
+                {icons.trash}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
 
   return (
     <main className={styles.accountPage}>
@@ -186,9 +203,7 @@ const Account = (): React.ReactElement => {
       </header>
 
       <div className={styles.shell}>
-
         <aside className={styles.sidebar}>
-
           <section className={styles.card}>
             <div className={styles.profileHeader}>
               <div className={styles.avatar}>{profile.name.split(' ').map((n) => n[0]).join('')}</div>
@@ -224,11 +239,9 @@ const Account = (): React.ReactElement => {
               </div>
             </div>
           </section>
-
         </aside>
 
         <div className={styles.mainContent}>
-
           <section className={styles.card}>
             <div className={styles.cardHeading}>
               <span className={styles.cardIcon} aria-hidden="true">{icons.person}</span>
@@ -367,49 +380,17 @@ const Account = (): React.ReactElement => {
           </section>
 
           <section className={styles.card}>
-            <div className={styles.tabsHeader}>
-              <button className={`${styles.tabButton} ${activeTab === 'history' ? styles.tabActive : ''}`} onClick={() => setActiveTab('history')}>
-                History ({history.length})
-              </button>
-              <button className={`${styles.tabButton} ${activeTab === 'sets' ? styles.tabActive : ''}`} onClick={() => setActiveTab('sets')}>
-                Saved sets ({savedSets.length})
+            <div className={styles.historyHeader}>
+              <div>
+                <h3>Recent history</h3>
+                <span>Your last {history.length || 20} generated sets</span>
+              </div>
+              <button type="button" className={styles.primaryActionButton} onClick={() => navigate('/library')}>
+                Open library →
               </button>
             </div>
-
-            {loadingSets ? (
-              <p className={styles.emptyStateCenter}>Loading your sets…</p>
-            ) : activeList.length === 0 ? (
-              <p className={styles.emptyStateCenter}>
-                {activeTab === 'history' ? 'No problems generated yet.' : 'No saved sets yet. Save one from the results page.'}
-              </p>
-            ) : (
-              <div className={styles.listScroll}>
-                <ul className={styles.list}>
-                  {activeList.map((item) => (
-                    <li key={item.id} className={styles.listItem}>
-                      <span className={styles.listIcon} aria-hidden="true">{activeTab === 'sets' ? icons.bookmark : icons.document}</span>
-                      <button className={styles.listItemMain} onClick={() => openSet(item)}>
-                        <strong>{item.name || item.topic || 'Math problem'}</strong>
-                        <span>
-                          {activeTab === 'history'
-                            ? `${new Date(item.createdAt).toLocaleDateString()} · ${item.prepLevel}`
-                            : `${item.questions.length} questions · ${item.prepLevel}`}
-                        </span>
-                      </button>
-                      <button
-                        className={styles.deleteIcon}
-                        onClick={() => handleDeleteSet(item.id)}
-                        aria-label="Delete item"
-                      >
-                        {icons.trash}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {renderHistory()}
           </section>
-
         </div>
       </div>
     </main>
