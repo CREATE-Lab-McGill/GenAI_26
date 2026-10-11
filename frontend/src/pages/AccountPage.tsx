@@ -5,6 +5,7 @@ import type { GeneratedSet } from '../types/problem';
 import { getSets, deleteSet } from '../api/client';
 import styles from '../styles/AccountPageStyles.module.css';
 import FeedbackButton from '../components/Feedback';
+import LogoBanner from '../components/LogoBanner';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 const DEFAULTS_KEY = 'mathcraft_generator_defaults';
@@ -173,10 +174,7 @@ const Account = (): React.ReactElement => {
   return (
     <main className={styles.accountPage}>
       <header className={styles.topbar}>
-        <a className={styles.brand} href="/" aria-label="MathCraft home">
-          <span className={styles.brandMark}>M</span>
-          <span>MathCraft</span>
-        </a>
+        <LogoBanner />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <FeedbackButton />
           <button className={styles.backButton} onClick={() => navigate('/dashboard')}>
