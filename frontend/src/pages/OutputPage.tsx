@@ -88,7 +88,7 @@ const ProblemOutput = (): React.ReactElement => {
   const [settingsQuestionId, setSettingsQuestionId] = useState<string | null>(null);
   const questionSettingsRef = useRef<HTMLDivElement | null>(null);
 
-  const [editingTipId, setEditingTipId] = useState<string | null>(null); 
+  const [editingTipId, setEditingTipId] = useState<string | null>(null);
   const [tipDraft, setTipDraft] = useState('');
   const [savingTipId, setSavingTipId] = useState<string | null>(null);
 
@@ -272,7 +272,7 @@ const ProblemOutput = (): React.ReactElement => {
     persistQuestionOverrides(newSet, q.id);
   };
 
-    const resetQuestionOverrides = (q: GeneratedQuestion) => {
+  const resetQuestionOverrides = (q: GeneratedQuestion) => {
     if (!set) return;
     const updatedQuestions = questions.map((item) =>
       item.id === q.id ? { ...item, outputOverrides: undefined } : item
@@ -750,69 +750,7 @@ const ProblemOutput = (): React.ReactElement => {
                           <strong>Hint:</strong> <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{q.hint}</ReactMarkdown>
                         </div>
                       )}
-                      {effIncludes.includes('Teacher tip') && (
-                        <div className={styles.teacherTipBox}>
-                          <div className={styles.teacherTipBoxHeader}>
-                            <span className={styles.teacherTipBoxLabel}>
-                              Teacher tip <span className={styles.teacherTipBoxNote}></span>
-                            </span>
-                            {editingTipId !== q.id && (
-                              <button
-                                type="button"
-                                className={styles.teacherTipEditIcon}
-                                onClick={() => startEditTip(q)}
-                                aria-label="Edit teacher tip"
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                </svg>
-                              </button>
-                            )}
-                          </div>
 
-                          {editingTipId === q.id ? (
-                            <div className={styles.teacherTipEdit}>
-                              <textarea
-                                rows={2}
-                                value={tipDraft}
-                                onChange={(e) => setTipDraft(e.target.value)}
-                                autoFocus
-                                placeholder="Write a quick tip for this question..."
-                              />
-                              <div className={styles.teacherTipEditActions}>
-                                <button
-                                  className={styles.secondaryButton}
-                                  onClick={cancelEditTip}
-                                  disabled={savingTipId === q.id}
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  className={styles.primaryButton}
-                                  onClick={() => saveTip(q)}
-                                  disabled={savingTipId === q.id}
-                                >
-                                  {savingTipId === q.id ? 'Saving...' : 'Save'}
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div
-                              className={styles.teacherTipBoxText}
-                              onClick={() => startEditTip(q)}
-                            >
-                              {q.teacherTip ? (
-                                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                  {q.teacherTip}
-                                </ReactMarkdown>
-                              ) : (
-                                <em>No tip yet - click to write one</em>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                      )}
 
                       {effDisplay.includes('Graph / diagram space') && (
                         <GraphCanvas
@@ -827,31 +765,85 @@ const ProblemOutput = (): React.ReactElement => {
                         </div>
                       )}
 
-                      {(effIncludes.includes('Answer key') || effIncludes.includes('Worked solutions')) && (
-                        <div className={styles.teacherKeyBlock}>
-                          <span className={styles.teacherKeyLabel}>Teacher Key Visible</span>
+                      {(effIncludes.includes('Answer key') ||
+                        effIncludes.includes('Worked solutions') ||
+                        effIncludes.includes('Teacher tip')) && (
+                          <div className={styles.teacherKeyBlock}>
+                            <span className={styles.teacherKeyLabel}>Teacher Key Visible</span>
 
-                          {effIncludes.includes('Worked solutions') && q.solution && (
-                            <div className={styles.workedSolution}>
-                              <strong>Solution Steps:</strong>
-                              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                {q.solution}
-                              </ReactMarkdown>
-                            </div>
-                          )}
-
-                          {effIncludes.includes('Answer key') && q.answer && (
-                            <div className={styles.finalAnswer}>
-                              <span>Final Answer:</span>
-                              <span>
+                            {effIncludes.includes('Worked solutions') && q.solution && (
+                              <div className={styles.workedSolution}>
+                                <strong>Solution Steps:</strong>
                                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                                  {q.answer}
+                                  {q.solution}
                                 </ReactMarkdown>
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                              </div>
+                            )}
+
+                            {effIncludes.includes('Answer key') && q.answer && (
+                              <div className={styles.finalAnswer}>
+                                <span>Final Answer:</span>
+                                <span>
+                                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                    {q.answer}
+                                  </ReactMarkdown>
+                                </span>
+                              </div>
+                            )}
+
+                            {effIncludes.includes('Teacher tip') && (
+                              <div className={styles.teacherTipBox}>
+                                <div className={styles.teacherTipBoxHeader}>
+                                  <span className={styles.teacherTipBoxLabel}>
+                                    Teacher tip <span className={styles.teacherTipBoxNote}></span>
+                                  </span>
+                                  {editingTipId !== q.id && (
+                                    <button
+                                      type="button"
+                                      className={styles.teacherTipEditIcon}
+                                      onClick={() => startEditTip(q)}
+                                      aria-label="Edit teacher tip"
+                                    >
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+
+                                {editingTipId === q.id ? (
+                                  <div className={styles.teacherTipEdit}>
+                                    <textarea
+                                      rows={2}
+                                      value={tipDraft}
+                                      onChange={(e) => setTipDraft(e.target.value)}
+                                      autoFocus
+                                      placeholder="Write a quick tip for this question..."
+                                    />
+                                    <div className={styles.teacherTipEditActions}>
+                                      <button className={styles.secondaryButton} onClick={cancelEditTip} disabled={savingTipId === q.id}>
+                                        Cancel
+                                      </button>
+                                      <button className={styles.primaryButton} onClick={() => saveTip(q)} disabled={savingTipId === q.id}>
+                                        {savingTipId === q.id ? 'Saving...' : 'Save'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className={styles.teacherTipBoxText} onClick={() => startEditTip(q)}>
+                                    {q.teacherTip ? (
+                                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                        {q.teacherTip}
+                                      </ReactMarkdown>
+                                    ) : (
+                                      <em>No tip yet - click to write one</em>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                     </div>
                   )}
 

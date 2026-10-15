@@ -1578,6 +1578,10 @@
   transform: scale(1.08);
 }
 
+.teacherKeyBlock .teacherTipBox {
+  margin-top: 16px;
+}
+
 
 @media (max-width: 720px) {
   .sleekPopover {

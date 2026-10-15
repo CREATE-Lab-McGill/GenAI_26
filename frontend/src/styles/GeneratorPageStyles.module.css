@@ -956,13 +956,39 @@
 }
 
 .previewHint {
-  background: #fef3c7;
-  border: 1px solid #fde68a;
+  background: rgba(126, 188, 230, 0.14);
+  border: 1px solid rgba(126, 188, 230, 0.4);
+  color: #2c6690;
   padding: 6px 10px;
   border-radius: 6px;
-  color: #92400e;
   font-size: 11px;
   margin-bottom: 10px;
+}
+
+.previewHint strong {
+  color: #1a4463;
+}
+
+.previewTeacherTip {
+  background: rgba(137, 128, 245, 0.05);
+  border: 1px solid rgba(137, 128, 245, 0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.previewTeacherTipLabel {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--violet);
+  margin-bottom: 2px;
 }
 
 .previewGraphSpace {

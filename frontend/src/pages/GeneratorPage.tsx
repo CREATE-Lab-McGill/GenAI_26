@@ -502,7 +502,7 @@ const Generator = (): React.ReactElement => {
 
                     {formData.outputIncludes.includes('Hints') && (
                       <div className={styles.previewHint}>
-                        Hint: Use the compound interest formula to start.
+                        <strong>Hint:</strong> Use the compound interest formula to start.
                       </div>
                     )}
 
@@ -516,21 +516,30 @@ const Generator = (): React.ReactElement => {
                       </div>
                     )}
 
-                    {(formData.outputIncludes.includes('Answer key') || formData.outputIncludes.includes('Worked solutions')) && (
-                      <div className={styles.previewTeacherKey}>
-                        <span className={styles.previewTeacherKeyLabel}>Teacher Key Visible</span>
+                    {(formData.outputIncludes.includes('Answer key') ||
+                      formData.outputIncludes.includes('Worked solutions') ||
+                      formData.outputIncludes.includes('Teacher tip')) && (
+                        <div className={styles.previewTeacherKey}>
+                          <span className={styles.previewTeacherKeyLabel}>Teacher Key Visible</span>
 
-                        {formData.outputIncludes.includes('Worked solutions') && (
-                          <div className={styles.previewWorkedSolution}>
-                            A = 6500(1 + 0.065)³ <br /> A ≈ 7851.68
-                          </div>
-                        )}
+                          {formData.outputIncludes.includes('Worked solutions') && (
+                            <div className={styles.previewWorkedSolution}>
+                              A = 6500(1 + 0.065)³ <br /> A ≈ 7851.68
+                            </div>
+                          )}
 
-                        {formData.outputIncludes.includes('Answer key') && (
-                          <div className={styles.previewFinalAnswer}>Final: $7,851.68</div>
-                        )}
-                      </div>
-                    )}
+                          {formData.outputIncludes.includes('Answer key') && (
+                            <div className={styles.previewFinalAnswer}>Final: $7,851.68</div>
+                          )}
+
+                          {formData.outputIncludes.includes('Teacher tip') && (
+                            <div className={styles.previewTeacherTip}>
+                              <span className={styles.previewTeacherTipLabel}>Teacher tip</span>
+                              Remind students to convert the rate to a decimal first.
+                            </div>
+                          )}
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
@@ -569,7 +578,7 @@ const Generator = (): React.ReactElement => {
                     </p>
                     <p>
                       <strong>Teacher:</strong>{' '}
-                      {formData.outputIncludes.filter(o => ['Answer key', 'Worked solutions'].includes(o)).join(', ') || 'None'}
+                      {formData.outputIncludes.filter(o => ['Answer key', 'Worked solutions', 'Teacher tip'].includes(o)).join(', ') || 'None'}
                     </p>
                   </div>
                 </div>
