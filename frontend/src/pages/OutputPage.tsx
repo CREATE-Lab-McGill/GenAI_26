@@ -73,6 +73,7 @@ const ProblemOutput = (): React.ReactElement => {
   const [setName, setSetName] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
   const [pendingDelete, setPendingDelete] = useState<GeneratedQuestion | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const [printMode] = useState<PrintMode>('student');
@@ -80,6 +81,7 @@ const ProblemOutput = (): React.ReactElement => {
   const setMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [altLoadingId, setAltLoadingId] = useState<string | null>(null);
+  const [pendingAlternative, setPendingAlternative] = useState<GeneratedQuestion | null>(null);
 
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateName, setDuplicateName] = useState('');
@@ -383,7 +385,9 @@ const ProblemOutput = (): React.ReactElement => {
     }
   };
 
-  const moreLikeThis = async (q: GeneratedQuestion) => {
+  const confirmAlternative = async () => {
+    if (!pendingAlternative) return;
+    const q = pendingAlternative;
     setAltLoadingId(q.id);
     try {
       const updatedQuestion = await generateAlternativeQuestion(q.id);
@@ -393,21 +397,37 @@ const ProblemOutput = (): React.ReactElement => {
       console.error("Failed to generate alternative question:", error);
     } finally {
       setAltLoadingId(null);
+      setPendingAlternative(null);
     }
   };
 
+
   const confirmDelete = async () => {
-    if (!pendingDelete) return;
-    const updatedQuestions = questions.filter((q) => q.id !== pendingDelete.id);
-    updateLocalStorage({ ...set, questions: updatedQuestions });
+    if (!pendingDelete || isDeleting) return;
+
     const idToDelete = pendingDelete.id;
-    setPendingDelete(null);
+    setIsDeleting(true);
+
     try {
       await deleteQuestion(idToDelete);
+
+      const updatedQuestions = questions.filter(
+        (q) => q.id !== idToDelete
+      );
+
+      updateLocalStorage({
+        ...set!,
+        questions: updatedQuestions,
+      });
+
+      setPendingDelete(null);
     } catch (error) {
       console.error("Failed to delete question:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
+
 
   const handleDragStart = (index: number) => setDragIndex(index);
   const handleDragEnter = (index: number) => {
@@ -959,7 +979,7 @@ const ProblemOutput = (): React.ReactElement => {
                   </button>
                   <button
                     className={styles.sidebarControl}
-                    onClick={() => moreLikeThis(q)}
+                    onClick={() => setPendingAlternative(q)}
                     disabled={altLoadingId === q.id}
                   >
                     {altLoadingId === q.id ? 'Generating...' : 'Alternative'}
@@ -1096,17 +1116,85 @@ const ProblemOutput = (): React.ReactElement => {
         </div>
       )}
 
+
       {pendingDelete && (
-        <div className={styles.modalOverlay} onClick={() => setPendingDelete(null)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => {
+            if (!isDeleting) setPendingDelete(null);
+          }}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3>Delete this question?</h3>
+
             <p className={styles.modalBody}>
-              "{pendingDelete.prompt.length > 90 ? `${pendingDelete.prompt.slice(0, 90)}…` : pendingDelete.prompt}"
-              will be removed from this set. This can't be undone.
+              This question will be removed from this set. This can't be undone.
             </p>
+
+            <div className={styles.modalQuote}>
+              <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+              >
+                {pendingDelete.prompt}
+              </ReactMarkdown>
+            </div>
+
             <div className={styles.modalActions}>
-              <button className={styles.secondaryButton} onClick={() => setPendingDelete(null)}>Cancel</button>
-              <button className={styles.dangerButton} onClick={confirmDelete}>Delete question</button>
+              <button
+                className={styles.secondaryButton}
+                onClick={() => setPendingDelete(null)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+
+              <button
+                className={styles.dangerButton}
+                onClick={confirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete question'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {pendingAlternative && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => !altLoadingId && setPendingAlternative(null)}
+        >
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3>Generate an alternative?</h3>
+            <p className={styles.modalBody}>
+              A new version of this question will replace the current one.
+            </p>
+            <div className={styles.modalQuote}>
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {pendingAlternative.prompt}
+              </ReactMarkdown>
+            </div>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.secondaryButton}
+                onClick={() => setPendingAlternative(null)}
+                disabled={!!altLoadingId}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.primaryButton}
+                onClick={confirmAlternative}
+                disabled={!!altLoadingId}
+              >
+                {altLoadingId ? 'Generating...' : 'Generate alternative'}
+              </button>
             </div>
           </div>
         </div>

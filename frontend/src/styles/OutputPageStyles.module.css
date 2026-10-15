@@ -428,10 +428,24 @@
 .dangerButton {
   background: var(--danger);
   color: var(--paper);
+  transition:
+    background 0.2s var(--ease),
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    opacity 0.2s var(--ease);
 }
 
-.dangerButton:hover {
+.dangerButton:hover:not(:disabled) {
   background: #9c3c33;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.dangerButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .modalOverlay {
@@ -517,6 +531,23 @@
 .modalBody {
   font-size: 14px;
   line-height: 1.6;
+}
+
+.modalQuote {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  border-left: 2px solid var(--border-soft);
+  padding-left: 12px;
+  margin: 12px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.modalQuote p {
+  margin: 0;
 }
 
 .modalActions {
