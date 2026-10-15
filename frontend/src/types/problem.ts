@@ -67,11 +67,11 @@ export const OUTPUT_INCLUDES: OutputInclude[] = [
   'Teacher tip',
 ];
 
-export type DisplayOption = 'Answer space' | 'Extra room for solution' | 'Graph / diagram space' | 'Difficulty tag';
+export type DisplayOption = 'Answer space' | 'Extra room for solution' | 'Graph space' | 'Difficulty tag';
 
 export const DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
-  'Graph / diagram space',
+  'Graph space',
   'Difficulty tag',
 ];
 

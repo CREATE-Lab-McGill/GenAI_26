@@ -29,14 +29,14 @@ const STUDENT_INCLUDE_OPTIONS: OutputInclude[] = ['Instructions', 'Hints'];
 const TEACHER_INCLUDE_OPTIONS: OutputInclude[] = ['Answer key', 'Worked solutions', 'Teacher tip'];
 const STUDENT_DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
-  'Graph / diagram space',
+  'Graph space',
   'Difficulty tag',
 ];
 
 const QUESTION_INCLUDE_OPTIONS: OutputInclude[] = ['Hints'];
 const QUESTION_DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
-  'Graph / diagram space',
+  'Graph space',
   'Difficulty tag',
 ];
 
@@ -471,7 +471,7 @@ const ProblemOutput = (): React.ReactElement => {
     const images: Record<string, string> = {};
     for (const q of questions) {
       const effDisplay = getEffectiveDisplay(q, displayOptions);
-      if (!effDisplay.includes('Graph / diagram space')) continue;
+      if (!effDisplay.includes('Graph space')) continue;
 
       const node = document.getElementById(`graph-${q.id}`);
       if (!node) continue;
@@ -752,7 +752,7 @@ const ProblemOutput = (): React.ReactElement => {
                       )}
 
 
-                      {effDisplay.includes('Graph / diagram space') && (
+                      {effDisplay.includes('Graph space') && (
                         <GraphCanvas
                           id={`graph-${q.id}`}
                           config={q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG}
@@ -922,7 +922,7 @@ const ProblemOutput = (): React.ReactElement => {
                           ))}
                         </div>
 
-                        {effDisplay.includes('Graph / diagram space') && (
+                        {effDisplay.includes('Graph space') && (
                           <div style={{ marginTop: '12px', paddingTop: '0px' }}>
                             <GraphSettingsEditor
                               currentConfig={q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG}
@@ -1057,7 +1057,7 @@ const ProblemOutput = (): React.ReactElement => {
               </div>
             </div>
 
-            {displayOptions.includes('Graph / diagram space') && (
+            {displayOptions.includes('Graph space') && (
               <div className={styles.settingsGroup} style={{ marginTop: '2px' }}>
                 <div className={styles.compactGlobalGraph}>
                   <GraphSettingsEditor
