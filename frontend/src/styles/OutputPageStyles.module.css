@@ -275,10 +275,16 @@
 .questionTop {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.questionTopClickable {
+  cursor: pointer;
 }
 
 .questionIndex {
+  flex-shrink: 0;
   font-family: var(--font-mono);
   font-size: 11.5px;
   letter-spacing: 0.05em;
@@ -1613,6 +1619,106 @@
   margin-top: 16px;
 }
 
+.collapsed {
+  gap: 10px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+.collapsed .dragHandle {
+  padding-top: 0;
+}
+
+.collapsed .questionMain {
+  gap: 0;
+}
+
+.collapseBtn {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-left: -2px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.collapseBtn svg {
+  transition: transform 0.2s var(--ease);
+}
+
+.chevronOpen svg {
+  transform: rotate(90deg);
+}
+
+.questionTopClickable:hover .collapseBtn {
+  background: rgba(33, 137, 126, 0.1);
+  color: var(--teal-deep);
+}
+
+.collapsedPreview {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collapsedPreview p,
+.collapsedPreview ul,
+.collapsedPreview ol,
+.collapsedPreview li,
+.collapsedPreview blockquote,
+.collapsedPreview h1,
+.collapsedPreview h2,
+.collapsedPreview h3,
+.collapsedPreview h4,
+.collapsedPreview h5,
+.collapsedPreview h6,
+.collapsedPreview .katex-display {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  list-style: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.collapsedPreview p::after,
+.collapsedPreview li::after {
+  content: ' ';
+}
+
+.collapsedPreview br {
+  display: none;
+}
+
+.collapsedPreview .katex {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.collapsedPreview .katex-display > .katex {
+  display: inline-block;
+  text-align: left;
+}
+
+@media print {
+  .collapseBtn {
+    display: none !important;
+  }
+}
 
 @media (max-width: 720px) {
   .sleekPopover {
