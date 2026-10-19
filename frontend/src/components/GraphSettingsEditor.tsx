@@ -1,38 +1,96 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { GraphConfig, GraphStyle } from '../types/problem';
 import styles from '../styles/OutputPageStyles.module.css';
+
+const MAX_ABS = 1_000_000;
 
 interface GraphSettingsEditorProps {
   currentConfig: GraphConfig;
   onUpdate: (newConfig: Partial<GraphConfig>) => void;
 }
 
+interface NumberFieldProps {
+  value: number;
+  onCommit: (n: number) => void;
+  isValid?: (n: number) => boolean;
+}
+
+const NumberField: React.FC<NumberFieldProps> = ({ value, onCommit, isValid = () => true }) => {
+  const [draft, setDraft] = useState(String(value));
+
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+
+  const commit = () => {
+    const n = parseFloat(draft);
+    if (Number.isFinite(n) && Math.abs(n) <= MAX_ABS && isValid(n)) {
+      if (n !== value) onCommit(n);
+      setDraft(String(n));
+    } else {
+      setDraft(String(value));
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      className={styles.sleekInput}
+      value={draft}
+      onChange={(e) => {
+        const raw = e.target.value;
+        if (/^-?\d*\.?\d*$/.test(raw)) setDraft(raw);
+      }}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        if (e.key === 'Escape') {
+          setDraft(String(value));
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+    />
+  );
+};
+
+const PRESETS: {
+  label: string;
+  style: GraphStyle;
+  x: [number, number];
+  y: [number, number];
+}[] = [
+  { label: 'All', style: 'axes' as GraphStyle, x: [-10, 10], y: [-10, 10] },
+  { label: 'Q1', style: 'quadrant1' as GraphStyle, x: [0, 10], y: [0, 10] },
+  { label: 'Q2', style: 'axes' as GraphStyle, x: [-10, 0], y: [0, 10] },
+  { label: 'Q3', style: 'axes' as GraphStyle, x: [-10, 0], y: [-10, 0] },
+  { label: 'Q4', style: 'axes' as GraphStyle, x: [0, 10], y: [-10, 0] },
+  { label: 'Off', style: 'blank-grid' as GraphStyle, x: [-10, 10], y: [-10, 10] },
+];
+
 const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig, onUpdate }) => {
+  const [xMin, xMax] = currentConfig.xRange ?? [-10, 10];
+  const [yMin, yMax] = currentConfig.yRange ?? [-10, 10];
+  const step = currentConfig.step ?? 2;
+
   return (
     <>
       <span className={styles.sleekSectionTitle}>Graph Layout</span>
       <div className={styles.segmentedControl}>
-        {[
-          { label: 'All', style: 'axes', x: [-10, 10], y: [-10, 10] },
-          { label: 'Q1', style: 'quadrant1', x: [0, 10], y: [0, 10] },
-          { label: 'Q2', style: 'axes', x: [-10, 0], y: [0, 10] },
-          { label: 'Q3', style: 'axes', x: [-10, 0], y: [-10, 0] },
-          { label: 'Q4', style: 'axes', x: [0, 10], y: [-10, 0] },
-          { label: 'Off', style: 'blank-grid', x: [-10, 10], y: [-10, 10] }
-        ].map((opt) => {
+        {PRESETS.map((opt) => {
           const isActive =
-            (currentConfig.xRange?.[0] ?? -10) === opt.x[0] &&
-            (currentConfig.xRange?.[1] ?? 10) === opt.x[1] &&
-            (currentConfig.yRange?.[0] ?? -10) === opt.y[0] &&
-            (currentConfig.yRange?.[1] ?? 10) === opt.y[1] &&
-            currentConfig.style === opt.style;
+            xMin === opt.x[0] &&
+            xMax === opt.x[1] &&
+            yMin === opt.y[0] &&
+            yMax === opt.y[1] &&
+            (currentConfig.style ?? 'axes') === opt.style;
 
           return (
             <button
               key={opt.label}
               type="button"
               className={`${styles.segmentedBtn} ${isActive ? styles.segmentedActive : ''}`}
-              onClick={() => onUpdate({ style: opt.style as GraphStyle, xRange: opt.x as [number, number], yRange: opt.y as [number, number] })}
+              onClick={() => onUpdate({ style: opt.style, xRange: opt.x, yRange: opt.y })}
             >
               {opt.label}
             </button>
@@ -42,7 +100,11 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
 
       <span className={styles.sleekSectionTitle}>Size</span>
       <div className={styles.segmentedControl}>
-        {[{ id: 'sm', label: 'Small' }, { id: 'md', label: 'Medium' }, { id: 'lg', label: 'Large' }].map((opt) => (
+        {[
+          { id: 'sm', label: 'Small' },
+          { id: 'md', label: 'Medium' },
+          { id: 'lg', label: 'Large' },
+        ].map((opt) => (
           <button
             key={opt.id}
             type="button"
@@ -61,7 +123,7 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
             <button
               key={s}
               type="button"
-              className={`${styles.segmentedBtn} ${currentConfig.step === s ? styles.segmentedActive : ''}`}
+              className={`${styles.segmentedBtn} ${step === s ? styles.segmentedActive : ''}`}
               onClick={() => onUpdate({ step: s })}
             >
               {s}
@@ -70,15 +132,10 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
         </div>
         <div className={styles.axisInputWrap} style={{ width: '85px', flexShrink: 0 }}>
           <span className={styles.axisInputTag}>Step</span>
-          <input
-            type="text"
-            className={styles.sleekInput}
-            value={currentConfig.step ?? 2}
-            onChange={(e) => {
-              const val = e.target.value;
-              const num = val === '' || val.endsWith('.') ? (val as any) : Number(val);
-              onUpdate({ step: num });
-            }}
+          <NumberField
+            value={step}
+            isValid={(n) => n > 0}
+            onCommit={(n) => onUpdate({ step: n })}
           />
         </div>
       </div>
@@ -98,29 +155,19 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
         <div className={styles.axisInputRow}>
           <div className={styles.axisInputWrap}>
             <span className={styles.axisInputTag}>−X</span>
-            <input
-              type="text"
-              className={styles.sleekInput}
-              value={currentConfig.xRange?.[0] ?? -10}
-              onChange={(e) => {
-                const val = e.target.value;
-                const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
-                onUpdate({ xRange: [num, currentConfig.xRange?.[1] ?? 10] });
-              }}
+            <NumberField
+              value={xMin}
+              isValid={(n) => n < xMax}
+              onCommit={(n) => onUpdate({ xRange: [n, xMax] })}
             />
           </div>
           <span className={styles.sleekAxisDivider}>to</span>
           <div className={styles.axisInputWrap}>
             <span className={styles.axisInputTag}>X</span>
-            <input
-              type="text"
-              className={styles.sleekInput}
-              value={currentConfig.xRange?.[1] ?? 10}
-              onChange={(e) => {
-                const val = e.target.value;
-                const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
-                onUpdate({ xRange: [currentConfig.xRange?.[0] ?? -10, num] });
-              }}
+            <NumberField
+              value={xMax}
+              isValid={(n) => n > xMin}
+              onCommit={(n) => onUpdate({ xRange: [xMin, n] })}
             />
           </div>
         </div>
@@ -131,29 +178,19 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
         <div className={styles.axisInputRow}>
           <div className={styles.axisInputWrap}>
             <span className={styles.axisInputTag}>−Y</span>
-            <input
-              type="text"
-              className={styles.sleekInput}
-              value={currentConfig.yRange?.[0] ?? -10}
-              onChange={(e) => {
-                const val = e.target.value;
-                const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
-                onUpdate({ yRange: [num, currentConfig.yRange?.[1] ?? 10] });
-              }}
+            <NumberField
+              value={yMin}
+              isValid={(n) => n < yMax}
+              onCommit={(n) => onUpdate({ yRange: [n, yMax] })}
             />
           </div>
           <span className={styles.sleekAxisDivider}>to</span>
           <div className={styles.axisInputWrap}>
             <span className={styles.axisInputTag}>Y</span>
-            <input
-              type="text"
-              className={styles.sleekInput}
-              value={currentConfig.yRange?.[1] ?? 10}
-              onChange={(e) => {
-                const val = e.target.value;
-                const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
-                onUpdate({ yRange: [currentConfig.yRange?.[0] ?? -10, num] });
-              }}
+            <NumberField
+              value={yMax}
+              isValid={(n) => n > yMin}
+              onCommit={(n) => onUpdate({ yRange: [yMin, n] })}
             />
           </div>
         </div>
