@@ -98,7 +98,15 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 24px;
+
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--cream);
+  
+  padding: 24px 32px 16px 32px;
+  margin: -32px -32px 24px -32px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .eyebrow {
