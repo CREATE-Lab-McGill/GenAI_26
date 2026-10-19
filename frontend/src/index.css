@@ -151,3 +151,8 @@ body,
 body {
   min-height: 100vh;
 }
+.headerActions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+.tutorialLanguage { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+@media (max-width: 640px) {
+  .languageHeader { flex-wrap: wrap; gap: 12px; }
+}

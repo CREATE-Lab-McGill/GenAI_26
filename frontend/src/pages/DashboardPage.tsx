@@ -1,3 +1,6 @@
+import { storage } from '../services/storage';
+import LanguageToggle from '../components/LanguageToggle';
+import { useLanguage } from '../i18n/language';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_PROFILE } from '../services/mockData';
@@ -9,13 +12,6 @@ import ProfileButton from '../components/Profile';
 import LogoBanner from '../components/LogoBanner';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
-
-function timeAgo(iso: string): string {
-  const hours = Math.round((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60));
-  if (hours < 1) return 'just now';
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
-}
 
 const icons = {
   document: (
@@ -105,6 +101,7 @@ const QUICK_ACTIONS = [
 ] as const;
 
 const Dashboard = (): React.ReactElement => {
+  const { t, label, questionCount, timeAgo } = useLanguage();
   const navigate = useNavigate();
   const profile = MOCK_PROFILE;
   const [selectedPrep, setSelectedPrep] = useState<PrepLevel>(profile.prepLevels[0]);
@@ -113,7 +110,7 @@ const Dashboard = (): React.ReactElement => {
   const [recentSets, setRecentSets] = useState<GeneratedSet[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(true);
 
-  const [selectedType, setSelectedType] = useState<typeof PROBLEM_TYPES[number]['key'] | null>(null);
+  const [selectedType, setSelectedType] = useState<(typeof PROBLEM_TYPES)[number]['key'] | null>(null);
   const [isTypeMenuOpen, setIsTypeMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -135,7 +132,7 @@ const Dashboard = (): React.ReactElement => {
   }, []);
 
   const openSet = (set: GeneratedSet) => {
-    localStorage.setItem(LAST_SET_KEY, JSON.stringify(set));
+    storage.setItem(LAST_SET_KEY, JSON.stringify(set));
     navigate('/results');
   };
 
@@ -145,15 +142,14 @@ const Dashboard = (): React.ReactElement => {
     navigate(type.route, { state: { prepLevel: selectedPrep } });
   };
 
-  const selectedTypeData = selectedType
-    ? PROBLEM_TYPES.find(t => t.key === selectedType)
-    : null;
+  const selectedTypeData = selectedType ? PROBLEM_TYPES.find((t) => t.key === selectedType) : null;
 
   return (
     <main className={styles.dashboard}>
-      <header className={styles.topbar}>
+      <header className={`${styles.topbar} languageHeader`}>
         <LogoBanner />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="headerActions">
+          <LanguageToggle />
           <FeedbackButton />
           <ProfileButton variant="full" name={profile.name} subtitle={profile.school} />
         </div>
@@ -162,15 +158,15 @@ const Dashboard = (): React.ReactElement => {
       <section className={styles.hero}>
         <div className={styles.heroCard}>
           <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>Welcome back</span>
+            <span className={styles.eyebrow}>{t('Welcome back')}</span>
             <h1>
-              Hey <span className={styles.gradientText}>{firstName}</span> <span aria-hidden="true">!</span>
+              {t('Hey')} <span className={styles.gradientText}>{firstName}</span> <span aria-hidden="true">!</span>
             </h1>
-            <p>Ready to build your next problem set? Pick a prep level and jump straight into generating.</p>
+            <p>{t('Ready to build your next problem set? Pick a prep level and jump straight into generating.')}</p>
           </div>
 
           <div className={styles.prepSection}>
-            <span className={styles.prepLabel}>Generating for</span>
+            <span className={styles.prepLabel}>{t('Generating for')}</span>
             <div className={styles.prepGrid}>
               {profile.prepLevels.map((level) => {
                 const isActive = selectedPrep === level;
@@ -182,15 +178,17 @@ const Dashboard = (): React.ReactElement => {
                     onClick={() => setSelectedPrep(level)}
                   >
                     {isActive && <span className={styles.prepCheck}>✓</span>}
-                    <span className={styles.prepIcon} aria-hidden="true">{icons.layers}</span>
-                    <span className={styles.prepName}>{level}</span>
+                    <span className={styles.prepIcon} aria-hidden="true">
+                      {icons.layers}
+                    </span>
+                    <span className={styles.prepName}>{label(level)}</span>
                   </button>
                 );
               })}
             </div>
 
             <div className={styles.typeSection}>
-              <span className={styles.prepLabel}>What are you generating</span>
+              <span className={styles.prepLabel}>{t('What are you generating')}</span>
 
               <div className={styles.customDropdown} ref={dropdownRef}>
                 <button
@@ -200,10 +198,12 @@ const Dashboard = (): React.ReactElement => {
                 >
                   {selectedTypeData ? (
                     <>
-                      <span className={styles.prepIcon} aria-hidden="true">{selectedTypeData.icon}</span>
+                      <span className={styles.prepIcon} aria-hidden="true">
+                        {selectedTypeData.icon}
+                      </span>
                       <div className={styles.typeCopy}>
-                        <span className={styles.prepName}>{selectedTypeData.label}</span>
-                        <span className={styles.typeDescription}>{selectedTypeData.description}</span>
+                        <span className={styles.prepName}>{label(selectedTypeData.label)}</span>
+                        <span className={styles.typeDescription}>{label(selectedTypeData.description)}</span>
                       </div>
                     </>
                   ) : (
@@ -217,12 +217,15 @@ const Dashboard = (): React.ReactElement => {
                       </span>
                       <div className={styles.typeCopy}>
                         <span className={styles.prepName} style={{ color: 'var(--ink-soft)' }}>
-                          Select problem type
+                          {t('Select problem type')}
                         </span>
                       </div>
                     </>
                   )}
-                  <span className={`${styles.dropdownChevron} ${isTypeMenuOpen ? styles.chevronOpen : ''}`} aria-hidden="true">
+                  <span
+                    className={`${styles.dropdownChevron} ${isTypeMenuOpen ? styles.chevronOpen : ''}`}
+                    aria-hidden="true"
+                  >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                       <path d="M6 9l6 6 6-6" />
                     </svg>
@@ -243,10 +246,12 @@ const Dashboard = (): React.ReactElement => {
                             setIsTypeMenuOpen(false);
                           }}
                         >
-                          <span className={styles.prepIcon} aria-hidden="true">{type.icon}</span>
+                          <span className={styles.prepIcon} aria-hidden="true">
+                            {type.icon}
+                          </span>
                           <div className={styles.typeCopy}>
-                            <span className={styles.prepName}>{type.label}</span>
-                            <span className={styles.typeDescription}>{type.description}</span>
+                            <span className={styles.prepName}>{label(type.label)}</span>
+                            <span className={styles.typeDescription}>{label(type.description)}</span>
                           </div>
                           {isActive && <span className={styles.typeCheck}>✓</span>}
                         </button>
@@ -257,16 +262,23 @@ const Dashboard = (): React.ReactElement => {
               </div>
             </div>
 
-            <button 
-              className={styles.generateButton} 
+            <button
+              className={styles.generateButton}
               onClick={handleGenerate}
               disabled={!selectedType}
-              style={{ opacity: !selectedType ? 0.5 : 1, cursor: !selectedType ? 'not-allowed' : 'pointer' }}
+              style={{
+                opacity: !selectedType ? 0.5 : 1,
+                cursor: !selectedType ? 'not-allowed' : 'pointer',
+              }}
             >
-              {selectedTypeData 
-                ? `Generate ${selectedTypeData.label.toLowerCase()} for ${selectedPrep}` 
-                : `Select a type to generate for ${selectedPrep}`
-              } 
+              {selectedTypeData
+                ? t('Generate {type} for {grade}', {
+                    type: label(selectedTypeData.label).toLocaleLowerCase(),
+                    grade: label(selectedPrep),
+                  })
+                : t('Select a type to generate for {grade}', {
+                    grade: label(selectedPrep),
+                  })}
               <span aria-hidden="true">→</span>
             </button>
           </div>
@@ -276,13 +288,15 @@ const Dashboard = (): React.ReactElement => {
       <div className={styles.grid}>
         <section className={styles.recentCard}>
           <div className={styles.cardHeader}>
-            <h2>Recent activity</h2>
-            <button className={styles.textLink} onClick={() => navigate('/account')}>View all</button>
+            <h2>{t('Recent activity')}</h2>
+            <button className={styles.textLink} onClick={() => navigate('/account')}>
+              {t('View all')}
+            </button>
           </div>
           {loadingRecent ? (
-            <p className={styles.emptyState}>Loading…</p>
+            <p className={styles.emptyState}>{t('Loading…')}</p>
           ) : recentSets.length === 0 ? (
-            <p className={styles.emptyState}>No sets generated yet, your history will show up here.</p>
+            <p className={styles.emptyState}>{t('No sets generated yet, your history will show up here.')}</p>
           ) : (
             <ul className={styles.activityList}>
               {recentSets.map((item) => (
@@ -291,8 +305,10 @@ const Dashboard = (): React.ReactElement => {
                     {icons.document}
                   </span>
                   <button className={styles.activityMain} onClick={() => openSet(item)}>
-                    <strong>{item.name || item.topic || 'Untitled set'}</strong>
-                    <p>{item.topic} · {item.prepLevel} · {item.questions.length} questions</p>
+                    <strong>{item.name || item.topic || t('Untitled set')}</strong>
+                    <p>
+                      {item.topic} · {label(item.prepLevel)} · {questionCount(item.questions.length)}
+                    </p>
                   </button>
                   <span className={styles.activityTime}>{timeAgo(item.createdAt)}</span>
                 </li>
@@ -302,17 +318,19 @@ const Dashboard = (): React.ReactElement => {
         </section>
 
         <section className={styles.quickActions}>
-          <h2>Quick actions</h2>
+          <h2>{t('Quick actions')}</h2>
           {QUICK_ACTIONS.map((action) => (
             <button key={action.key} className={styles.actionRow} onClick={() => navigate(action.route)}>
               <span className={`${styles.actionIcon} ${action.colorClass}`} aria-hidden="true">
                 {action.icon}
               </span>
               <span className={styles.actionCopy}>
-                <strong>{action.label}</strong>
-                <small>{action.description}</small>
+                <strong>{label(action.label)}</strong>
+                <small>{label(action.description)}</small>
               </span>
-              <span className={styles.actionChevron} aria-hidden="true">›</span>
+              <span className={styles.actionChevron} aria-hidden="true">
+                ›
+              </span>
             </button>
           ))}
         </section>

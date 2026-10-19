@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/language';
 import { User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../styles/ProfileStyles.module.css';
@@ -15,13 +16,14 @@ const ProfileButton = ({
   variant = 'icon',
   size = 'default',
 }: ProfileButtonProps): React.ReactElement => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   return (
     <button
       className={`${styles.wrap} ${size === 'small' ? styles.small : ''} ${variant === 'full' ? styles.full : ''}`}
       onClick={() => navigate('/account')}
-      aria-label="Go to profile"
+      aria-label={t('Go to profile')}
     >
       <span className={styles.avatar}>
         <User size={variant === 'full' ? 18 : 16} strokeWidth={1.8} />

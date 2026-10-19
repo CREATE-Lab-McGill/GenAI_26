@@ -1,3 +1,6 @@
+import { storage } from '../services/storage';
+import LanguageToggle from '../components/LanguageToggle';
+import { useLanguage } from '../i18n/language';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_PROFILE } from '../services/mockData';
@@ -18,6 +21,7 @@ type Pathway = 'CST' | 'TS' | 'SN';
 interface PrepProfile {
   id: string;
   name: string;
+  defaultNameNumber?: number;
   grade: string;
   curriculum: string;
   pathway: Pathway | null;
@@ -41,6 +45,7 @@ const INITIAL_PREP_PROFILES: PrepProfile[] = [
   {
     id: 'sp1',
     name: 'Prep 1',
+    defaultNameNumber: 1,
     grade: 'Secondary 4',
     curriculum: 'Quebec (QEP)',
     pathway: 'TS',
@@ -51,6 +56,7 @@ const INITIAL_PREP_PROFILES: PrepProfile[] = [
   {
     id: 'sp2',
     name: 'Prep 2',
+    defaultNameNumber: 2,
     grade: 'Secondary 4',
     curriculum: 'Quebec (QEP)',
     pathway: 'CST',
@@ -96,6 +102,7 @@ const icons = {
 };
 
 const Account = (): React.ReactElement => {
+  const { t, label, questionCount, formatDate } = useLanguage();
   const navigate = useNavigate();
   const profile = MOCK_PROFILE;
 
@@ -108,7 +115,7 @@ const Account = (): React.ReactElement => {
   const [activePrepProfileId, setActivePrepProfileId] = useState(INITIAL_PREP_PROFILES[0].id);
 
   useEffect(() => {
-    setHasSavedDefaults(Boolean(localStorage.getItem(DEFAULTS_KEY)));
+    setHasSavedDefaults(Boolean(storage.getItem(DEFAULTS_KEY)));
 
     getSets()
       .then((data: GeneratedSet[]) => setSets(data))
@@ -121,6 +128,9 @@ const Account = (): React.ReactElement => {
 
   const activePrepProfile = prepProfiles.find((p) => p.id === activePrepProfileId) ?? prepProfiles[0];
 
+  const displayPrepName = (prep: PrepProfile) =>
+    prep.defaultNameNumber === undefined ? prep.name : t('Prep {number}', { number: prep.defaultNameNumber });
+
   const updateActivePrepProfile = (patch: Partial<PrepProfile>) => {
     setPrepProfiles((prev) => prev.map((p) => (p.id === activePrepProfile.id ? { ...p, ...patch } : p)));
   };
@@ -130,6 +140,7 @@ const Account = (): React.ReactElement => {
     const next: PrepProfile = {
       id,
       name: `Prep ${prepProfiles.length + 1}`,
+      defaultNameNumber: prepProfiles.length + 1,
       grade: GRADES[0],
       curriculum: CURRICULA[0],
       pathway: null,
@@ -149,12 +160,12 @@ const Account = (): React.ReactElement => {
   };
 
   const clearDefaults = () => {
-    localStorage.removeItem(DEFAULTS_KEY);
+    storage.removeItem(DEFAULTS_KEY);
     setHasSavedDefaults(false);
   };
 
   const openSet = (set: GeneratedSet) => {
-    localStorage.setItem(LAST_SET_KEY, JSON.stringify(set));
+    storage.setItem(LAST_SET_KEY, JSON.stringify(set));
     navigate('/results');
   };
 
@@ -173,23 +184,27 @@ const Account = (): React.ReactElement => {
 
   return (
     <main className={styles.accountPage}>
-      <header className={styles.topbar}>
+      <header className={`${styles.topbar} languageHeader`}>
         <LogoBanner />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="headerActions">
+          <LanguageToggle />
           <FeedbackButton />
           <button className={styles.backButton} onClick={() => navigate('/dashboard')}>
-            <span aria-hidden="true">←</span> Back to dashboard
+            <span aria-hidden="true">←</span> {t('Back to dashboard')}
           </button>
         </div>
       </header>
 
       <div className={styles.shell}>
-
         <aside className={styles.sidebar}>
-
           <section className={styles.card}>
             <div className={styles.profileHeader}>
-              <div className={styles.avatar}>{profile.name.split(' ').map((n) => n[0]).join('')}</div>
+              <div className={styles.avatar}>
+                {profile.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')}
+              </div>
               <div>
                 <h1>{profile.name}</h1>
                 <p>{profile.email}</p>
@@ -198,14 +213,16 @@ const Account = (): React.ReactElement => {
             </div>
 
             <div className={styles.presetBlock}>
-              <span className={styles.fieldLabel}>Generation preset</span>
+              <span className={styles.fieldLabel}>{t('Generation preset')}</span>
               {hasSavedDefaults ? (
                 <div className={styles.defaultsRow}>
-                  <span className={styles.defaultsBadge}>✓ Custom saved</span>
-                  <button className={styles.textLink} onClick={clearDefaults}>Reset to standard</button>
+                  <span className={styles.defaultsBadge}>{t('✓ Custom saved')}</span>
+                  <button className={styles.textLink} onClick={clearDefaults}>
+                    {t('Reset to standard')}
+                  </button>
                 </div>
               ) : (
-                <p className={styles.emptyLine}>No presets saved yet. Use "Save as default" in the generator.</p>
+                <p className={styles.emptyLine}>{t('No presets saved yet. Use "Save as default" in the generator.')}</p>
               )}
             </div>
           </section>
@@ -214,25 +231,25 @@ const Account = (): React.ReactElement => {
             <div className={styles.statsGrid}>
               <div className={styles.statBlock}>
                 <strong>{loadingSets ? '–' : history.length}</strong>
-                <span>Sets created</span>
+                <span>{t('Sets created')}</span>
               </div>
               <div className={styles.statBlock}>
                 <strong>{loadingSets ? '–' : savedSets.length}</strong>
-                <span>Saved sets</span>
+                <span>{t('Saved sets')}</span>
               </div>
             </div>
           </section>
-
         </aside>
 
         <div className={styles.mainContent}>
-
           <section className={styles.card}>
             <div className={styles.cardHeading}>
-              <span className={styles.cardIcon} aria-hidden="true">{icons.person}</span>
+              <span className={styles.cardIcon} aria-hidden="true">
+                {icons.person}
+              </span>
               <div>
-                <h2>Prep profiles</h2>
-                <p className={styles.cardSubtitle}>Fine-tune the generator for each specific class.</p>
+                <h2>{t('Prep profiles')}</h2>
+                <p className={styles.cardSubtitle}>{t('Fine-tune the generator for each specific class.')}</p>
               </div>
             </div>
 
@@ -244,7 +261,7 @@ const Account = (): React.ReactElement => {
                   className={`${styles.profileTab} ${sp.id === activePrepProfile.id ? styles.profileTabActive : ''}`}
                   onClick={() => setActivePrepProfileId(sp.id)}
                 >
-                  {sp.name}
+                  {displayPrepName(sp)}
                   {prepProfiles.length > 1 && sp.id === activePrepProfile.id && (
                     <span
                       className={styles.profileTabRemove}
@@ -259,46 +276,54 @@ const Account = (): React.ReactElement => {
                 </button>
               ))}
               <button type="button" className={styles.addProfileButton} onClick={addPrepProfile}>
-                <span aria-hidden="true">{icons.plus}</span> Add Prep
+                <span aria-hidden="true">{icons.plus}</span> {t('Add Prep')}
               </button>
             </div>
 
             <div className={styles.profileEditor}>
               <label className={styles.field}>
-                <span className={styles.fieldLabel}>Prep name</span>
+                <span className={styles.fieldLabel}>{t('Prep name')}</span>
                 <input
-                  value={activePrepProfile.name}
-                  onChange={(e) => updateActivePrepProfile({ name: e.target.value })}
+                  value={displayPrepName(activePrepProfile)}
+                  onChange={(e) => updateActivePrepProfile({ name: e.target.value, defaultNameNumber: undefined })}
                 />
               </label>
 
               <div className={styles.fieldRow}>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Grade</span>
+                  <span className={styles.fieldLabel}>{t('Grade')}</span>
                   <select
                     className={styles.select}
                     value={activePrepProfile.grade}
                     onChange={(e) => updateActivePrepProfile({ grade: e.target.value })}
                   >
-                    {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+                    {GRADES.map((g) => (
+                      <option key={g} value={g}>
+                        {label(g)}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Curriculum</span>
+                  <span className={styles.fieldLabel}>{t('Curriculum')}</span>
                   <select
                     className={styles.select}
                     value={activePrepProfile.curriculum}
                     onChange={(e) => updateActivePrepProfile({ curriculum: e.target.value })}
                   >
-                    {CURRICULA.map((c) => <option key={c} value={c}>{c}</option>)}
+                    {CURRICULA.map((c) => (
+                      <option key={c} value={c}>
+                        {label(c)}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
 
               {(activePrepProfile.grade === 'Secondary 4' || activePrepProfile.grade === 'Secondary 5') && (
                 <div className={styles.field}>
-                  <span className={styles.fieldLabel}>Pathway</span>
+                  <span className={styles.fieldLabel}>{t('Pathway')}</span>
                   <div className={styles.segmentRow}>
                     {PATHWAYS.map((p) => (
                       <button
@@ -318,18 +343,22 @@ const Account = (): React.ReactElement => {
 
               <div className={styles.fieldRow}>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Class size</span>
+                  <span className={styles.fieldLabel}>{t('Class size')}</span>
                   <select
                     className={styles.select}
                     value={activePrepProfile.classSize}
                     onChange={(e) => updateActivePrepProfile({ classSize: e.target.value })}
                   >
-                    {CLASS_SIZES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    {CLASS_SIZES.map((c) => (
+                      <option key={c} value={c}>
+                        {label(c)}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
                 <div className={styles.field}>
-                  <span className={styles.fieldLabel}>Math level</span>
+                  <span className={styles.fieldLabel}>{t('Math level')}</span>
                   <div className={styles.segmentRow}>
                     {MATH_LEVELS.map((level) => (
                       <button
@@ -338,7 +367,7 @@ const Account = (): React.ReactElement => {
                         className={`${styles.segmentPill} ${activePrepProfile.mathLevel === level ? styles.segmentPillActive : ''}`}
                         onClick={() => updateActivePrepProfile({ mathLevel: level })}
                       >
-                        {level}
+                        {label(level)}
                       </button>
                     ))}
                   </div>
@@ -346,17 +375,21 @@ const Account = (): React.ReactElement => {
               </div>
 
               <div className={styles.field}>
-                <span className={styles.fieldLabel}>Specific needs (Select all that apply)</span>
+                <span className={styles.fieldLabel}>{t('Specific needs (Select all that apply)')}</span>
                 <div className={styles.checkGrid}>
                   {NEEDS.map((need) => (
                     <label key={need} className={styles.checkCard}>
                       <input
                         type="checkbox"
                         checked={activePrepProfile.needs.includes(need)}
-                        onChange={() => updateActivePrepProfile({ needs: toggleInArray(activePrepProfile.needs, need) })}
+                        onChange={() =>
+                          updateActivePrepProfile({
+                            needs: toggleInArray(activePrepProfile.needs, need),
+                          })
+                        }
                       />
                       <span className={styles.checkBox}>✓</span>
-                      <span>{need}</span>
+                      <span>{label(need)}</span>
                     </label>
                   ))}
                 </div>
@@ -366,38 +399,50 @@ const Account = (): React.ReactElement => {
 
           <section className={styles.card}>
             <div className={styles.tabsHeader}>
-              <button className={`${styles.tabButton} ${activeTab === 'history' ? styles.tabActive : ''}`} onClick={() => setActiveTab('history')}>
-                History ({history.length})
+              <button
+                className={`${styles.tabButton} ${activeTab === 'history' ? styles.tabActive : ''}`}
+                onClick={() => setActiveTab('history')}
+              >
+                {t('History (')}
+                {history.length})
               </button>
-              <button className={`${styles.tabButton} ${activeTab === 'sets' ? styles.tabActive : ''}`} onClick={() => setActiveTab('sets')}>
-                Saved sets ({savedSets.length})
+              <button
+                className={`${styles.tabButton} ${activeTab === 'sets' ? styles.tabActive : ''}`}
+                onClick={() => setActiveTab('sets')}
+              >
+                {t('Saved sets (')}
+                {savedSets.length})
               </button>
             </div>
 
             {loadingSets ? (
-              <p className={styles.emptyStateCenter}>Loading your sets…</p>
+              <p className={styles.emptyStateCenter}>{t('Loading your sets…')}</p>
             ) : activeList.length === 0 ? (
               <p className={styles.emptyStateCenter}>
-                {activeTab === 'history' ? 'No problems generated yet.' : 'No saved sets yet. Save one from the results page.'}
+                {activeTab === 'history'
+                  ? t('No problems generated yet.')
+                  : t('No saved sets yet. Save one from the results page.')}
               </p>
             ) : (
               <div className={styles.listScroll}>
                 <ul className={styles.list}>
                   {activeList.map((item) => (
                     <li key={item.id} className={styles.listItem}>
-                      <span className={styles.listIcon} aria-hidden="true">{activeTab === 'sets' ? icons.bookmark : icons.document}</span>
+                      <span className={styles.listIcon} aria-hidden="true">
+                        {activeTab === 'sets' ? icons.bookmark : icons.document}
+                      </span>
                       <button className={styles.listItemMain} onClick={() => openSet(item)}>
-                        <strong>{item.name || item.topic || 'Math problem'}</strong>
+                        <strong>{item.name || item.topic || t('Math problem')}</strong>
                         <span>
                           {activeTab === 'history'
-                            ? `${new Date(item.createdAt).toLocaleDateString()} · ${item.prepLevel}`
-                            : `${item.questions.length} questions · ${item.prepLevel}`}
+                            ? `${formatDate(item.createdAt)} · ${label(item.prepLevel)}`
+                            : `${questionCount(item.questions.length)} · ${label(item.prepLevel)}`}
                         </span>
                       </button>
                       <button
                         className={styles.deleteIcon}
                         onClick={() => handleDeleteSet(item.id)}
-                        aria-label="Delete item"
+                        aria-label={t('Delete item')}
                       >
                         {icons.trash}
                       </button>
@@ -407,7 +452,6 @@ const Account = (): React.ReactElement => {
               </div>
             )}
           </section>
-
         </div>
       </div>
     </main>

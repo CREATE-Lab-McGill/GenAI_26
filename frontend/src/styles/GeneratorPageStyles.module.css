@@ -1083,3 +1083,5 @@
   color: var(--paper);
   box-shadow: var(--shadow-sm);
 }
+/* Allow the language toggle and translated status to wrap on narrow screens. */
+.topbarActions, .toolDock { flex-wrap: wrap; min-width: 0; max-width: 100%; }

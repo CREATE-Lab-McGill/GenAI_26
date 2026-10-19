@@ -1,21 +1,32 @@
+import { storage } from '../services/storage';
+import LanguageToggle from '../components/LanguageToggle';
+import { useLanguage } from '../i18n/language';
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TagBadge from '../components/TagBadge';
 import FeedbackButton from '../components/Feedback';
 import ProfileButton from '../components/Profile';
-import type {
-  GeneratedQuestion,
-  GeneratedSet,
-  OutputInclude,
-  DisplayOption,
-} from '../types/problem';
-import { editQuestionWithAi, editSetWithAi, saveSet, deleteQuestion, updateQuestionManual, generateAlternativeQuestion, exportWordDocument, reorderQuestions, duplicateSet, updateQuestionTip, updateQuestionOverrides, updateSetSettings } from '../api/client';
+import type { GeneratedQuestion, GeneratedSet, OutputInclude, DisplayOption } from '../types/problem';
+import {
+  editQuestionWithAi,
+  editSetWithAi,
+  saveSet,
+  deleteQuestion,
+  updateQuestionManual,
+  generateAlternativeQuestion,
+  exportWordDocument,
+  reorderQuestions,
+  duplicateSet,
+  updateQuestionTip,
+  updateQuestionOverrides,
+  updateSetSettings,
+} from '../api/client';
 import styles from '../styles/OutputPageStyles.module.css';
-import ReactMarkdown from "react-markdown";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
-import "mathlive";
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
+import 'mathlive';
 import { saveAs } from 'file-saver';
 import { GraphCanvas } from '../components/GraphCanvas';
 import { toPng } from 'html-to-image';
@@ -27,18 +38,10 @@ const LAST_SET_KEY = 'mathcraft_last_generated_set';
 
 const STUDENT_INCLUDE_OPTIONS: OutputInclude[] = ['Instructions', 'Hints'];
 const TEACHER_INCLUDE_OPTIONS: OutputInclude[] = ['Answer key', 'Worked solutions', 'Teacher tip'];
-const STUDENT_DISPLAY_OPTIONS: DisplayOption[] = [
-  'Answer space',
-  'Graph / diagram space',
-  'Difficulty tag',
-];
+const STUDENT_DISPLAY_OPTIONS: DisplayOption[] = ['Answer space', 'Graph / diagram space', 'Difficulty tag'];
 
 const QUESTION_INCLUDE_OPTIONS: OutputInclude[] = ['Hints'];
-const QUESTION_DISPLAY_OPTIONS: DisplayOption[] = [
-  'Answer space',
-  'Graph / diagram space',
-  'Difficulty tag',
-];
+const QUESTION_DISPLAY_OPTIONS: DisplayOption[] = ['Answer space', 'Graph / diagram space', 'Difficulty tag'];
 
 function toggleInArray<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
@@ -47,6 +50,7 @@ function toggleInArray<T>(list: T[], value: T): T[] {
 type PrintMode = 'student' | 'teacher';
 
 const ProblemOutput = (): React.ReactElement => {
+  const { t, label, questionCount } = useLanguage();
   const navigate = useNavigate();
   const [set, setSet] = useState<GeneratedSet | null>(null);
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
@@ -88,12 +92,12 @@ const ProblemOutput = (): React.ReactElement => {
   const [settingsQuestionId, setSettingsQuestionId] = useState<string | null>(null);
   const questionSettingsRef = useRef<HTMLDivElement | null>(null);
 
-  const [editingTipId, setEditingTipId] = useState<string | null>(null); 
+  const [editingTipId, setEditingTipId] = useState<string | null>(null);
   const [tipDraft, setTipDraft] = useState('');
   const [savingTipId, setSavingTipId] = useState<string | null>(null);
 
   useEffect(() => {
-    const raw = localStorage.getItem(LAST_SET_KEY);
+    const raw = storage.getItem(LAST_SET_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as GeneratedSet;
       setSet(parsed);
@@ -133,13 +137,13 @@ const ProblemOutput = (): React.ReactElement => {
   const updateLocalStorage = (updatedSet: GeneratedSet) => {
     setSet(updatedSet);
     setQuestions(updatedSet.questions);
-    localStorage.setItem(LAST_SET_KEY, JSON.stringify(updatedSet));
+    storage.setItem(LAST_SET_KEY, JSON.stringify(updatedSet));
   };
 
   const persistSetSettings = (updatedSet: GeneratedSet) => {
     if (!updatedSet.id) return;
     updateSetSettings(updatedSet.id, updatedSet.formData).catch((e) =>
-      console.error("Failed to save set settings:", e)
+      console.error('Failed to save set settings:', e),
     );
   };
 
@@ -149,7 +153,7 @@ const ProblemOutput = (): React.ReactElement => {
     const send = () => {
       const q = updatedSet.questions.find((x) => x.id === questionId);
       updateQuestionOverrides(questionId, q?.outputOverrides ?? null).catch((e) =>
-        console.error("Failed to save question overrides:", e)
+        console.error('Failed to save question overrides:', e),
       );
     };
     if (!debounce) return send();
@@ -161,7 +165,10 @@ const ProblemOutput = (): React.ReactElement => {
     const current = set!.formData?.outputIncludes || [];
     const updated = {
       ...set!,
-      formData: { ...set!.formData, outputIncludes: toggleInArray(current, option) },
+      formData: {
+        ...set!.formData,
+        outputIncludes: toggleInArray(current, option),
+      },
     };
     updateLocalStorage(updated);
     persistSetSettings(updated);
@@ -171,7 +178,10 @@ const ProblemOutput = (): React.ReactElement => {
     const current = set!.formData?.displayOptions || [];
     const updated = {
       ...set!,
-      formData: { ...set!.formData, displayOptions: toggleInArray(current, option) },
+      formData: {
+        ...set!.formData,
+        displayOptions: toggleInArray(current, option),
+      },
     };
     updateLocalStorage(updated);
     persistSetSettings(updated);
@@ -184,8 +194,7 @@ const ProblemOutput = (): React.ReactElement => {
     q.outputOverrides?.displayOptions ?? setDisplay;
 
   const hasCustomSettings = (q: GeneratedQuestion): boolean =>
-    !!q.outputOverrides?.outputIncludes || !!q.outputOverrides?.displayOptions ||
-    !!q.outputOverrides?.graphConfig;
+    !!q.outputOverrides?.outputIncludes || !!q.outputOverrides?.displayOptions || !!q.outputOverrides?.graphConfig;
 
   const arraysEqualUnordered = <T,>(a: T[], b: T[]): boolean => {
     if (a.length !== b.length) return false;
@@ -211,7 +220,10 @@ const ProblemOutput = (): React.ReactElement => {
 
       const hasAnyOverride =
         !!newOverrides.outputIncludes || !!newOverrides.displayOptions || !!newOverrides.graphConfig;
-      return { ...item, outputOverrides: hasAnyOverride ? newOverrides : undefined };
+      return {
+        ...item,
+        outputOverrides: hasAnyOverride ? newOverrides : undefined,
+      };
     });
     const newSet = { ...set, questions: updatedQuestions };
     updateLocalStorage(newSet);
@@ -221,15 +233,19 @@ const ProblemOutput = (): React.ReactElement => {
   const updateGraphConfig = (q: GeneratedQuestion, newConfig: Partial<GraphConfig>) => {
     if (!set) return;
 
-    const currentConfig = q.outputOverrides?.graphConfig
-      ?? set.formData?.graphConfig
-      ?? DEFAULT_GRAPH_CONFIG;
+    const currentConfig = q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG;
     const updatedConfig = { ...currentConfig, ...newConfig };
 
     const updatedQuestions = questions.map((item) =>
       item.id !== q.id
         ? item
-        : { ...item, outputOverrides: { ...item.outputOverrides, graphConfig: updatedConfig } }
+        : {
+            ...item,
+            outputOverrides: {
+              ...item.outputOverrides,
+              graphConfig: updatedConfig,
+            },
+          },
     );
     const newSet = { ...set, questions: updatedQuestions };
     updateLocalStorage(newSet);
@@ -242,7 +258,10 @@ const ProblemOutput = (): React.ReactElement => {
     const currentConfig = set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG;
     const updatedConfig = { ...currentConfig, ...newConfig };
 
-    const newSet = { ...set, formData: { ...set.formData, graphConfig: updatedConfig } };
+    const newSet = {
+      ...set,
+      formData: { ...set.formData, graphConfig: updatedConfig },
+    };
     updateLocalStorage(newSet);
     persistSetSettings(newSet);
   };
@@ -265,17 +284,20 @@ const ProblemOutput = (): React.ReactElement => {
 
       const hasAnyOverride =
         !!newOverrides.outputIncludes || !!newOverrides.displayOptions || !!newOverrides.graphConfig;
-      return { ...item, outputOverrides: hasAnyOverride ? newOverrides : undefined };
+      return {
+        ...item,
+        outputOverrides: hasAnyOverride ? newOverrides : undefined,
+      };
     });
     const newSet = { ...set, questions: updatedQuestions };
     updateLocalStorage(newSet);
     persistQuestionOverrides(newSet, q.id);
   };
 
-    const resetQuestionOverrides = (q: GeneratedQuestion) => {
+  const resetQuestionOverrides = (q: GeneratedQuestion) => {
     if (!set) return;
     const updatedQuestions = questions.map((item) =>
-      item.id === q.id ? { ...item, outputOverrides: undefined } : item
+      item.id === q.id ? { ...item, outputOverrides: undefined } : item,
     );
     const newSet = { ...set, questions: updatedQuestions };
     updateLocalStorage(newSet);
@@ -298,12 +320,12 @@ const ProblemOutput = (): React.ReactElement => {
     try {
       const updated = await updateQuestionTip(q.id, tipDraft);
       const updatedQuestions = questions.map((item) =>
-        item.id === q.id ? { ...item, teacherTip: updated.teacherTip } : item
+        item.id === q.id ? { ...item, teacherTip: updated.teacherTip } : item,
       );
       updateLocalStorage({ ...set, questions: updatedQuestions });
       setEditingTipId(null);
     } catch (error) {
-      console.error("Failed to save teacher tip:", error);
+      console.error('Failed to save teacher tip:', error);
     } finally {
       setSavingTipId(null);
     }
@@ -312,10 +334,16 @@ const ProblemOutput = (): React.ReactElement => {
   if (!set) {
     return (
       <main className={styles.outputPage}>
+        <header className={`${styles.topbar} languageHeader`}>
+          <LogoBanner />
+          <LanguageToggle />
+        </header>
         <div className={styles.emptyShell}>
-          <h1>No set to show yet</h1>
-          <p>Generate a problem set first, then come back here to review it.</p>
-          <button className={styles.primaryButton} onClick={() => navigate('/generate')}>Go to generator</button>
+          <h1>{t('No set to show yet')}</h1>
+          <p>{t('Generate a problem set first, then come back here to review it.')}</p>
+          <button className={styles.primaryButton} onClick={() => navigate('/generate')}>
+            {t('Go to generator')}
+          </button>
         </div>
       </main>
     );
@@ -336,7 +364,7 @@ const ProblemOutput = (): React.ReactElement => {
       updateLocalStorage({ ...set, questions: updatedQuestions });
       setEditingId(null);
     } catch (error) {
-      console.error("Failed to save manual edit:", error);
+      console.error('Failed to save manual edit:', error);
     } finally {
       setSavingMode(null);
     }
@@ -357,7 +385,7 @@ const ProblemOutput = (): React.ReactElement => {
       updateLocalStorage({ ...set, questions: updatedQuestions });
       setAiEditingId(null);
     } catch (error) {
-      console.error("Failed to edit question:", error);
+      console.error('Failed to edit question:', error);
     } finally {
       setIsAiLoading(false);
     }
@@ -371,13 +399,13 @@ const ProblemOutput = (): React.ReactElement => {
       updateLocalStorage({
         ...set,
         ...updatedSet,
-        name: updatedSet.name || set.name
+        name: updatedSet.name || set.name,
       });
 
       setGlobalPrompt('');
       setShowEditSetModal(false);
     } catch (error) {
-      console.error("Failed to edit set:", error);
+      console.error('Failed to edit set:', error);
     } finally {
       setIsGlobalEditing(false);
     }
@@ -390,7 +418,7 @@ const ProblemOutput = (): React.ReactElement => {
       const updatedQuestions = questions.map((item) => (item.id === q.id ? { ...item, ...updatedQuestion } : item));
       updateLocalStorage({ ...set, questions: updatedQuestions });
     } catch (error) {
-      console.error("Failed to generate alternative question:", error);
+      console.error('Failed to generate alternative question:', error);
     } finally {
       setAltLoadingId(null);
     }
@@ -405,7 +433,7 @@ const ProblemOutput = (): React.ReactElement => {
     try {
       await deleteQuestion(idToDelete);
     } catch (error) {
-      console.error("Failed to delete question:", error);
+      console.error('Failed to delete question:', error);
     }
   };
 
@@ -428,8 +456,11 @@ const ProblemOutput = (): React.ReactElement => {
     setDragOverIndex(null);
 
     if (set?.id) {
-      reorderQuestions(set.id, copy.map((q) => q.id)).catch((error) => {
-        console.error("Failed to save new order:", error);
+      reorderQuestions(
+        set.id,
+        copy.map((q) => q.id),
+      ).catch((error) => {
+        console.error('Failed to save new order:', error);
       });
     }
   };
@@ -448,7 +479,7 @@ const ProblemOutput = (): React.ReactElement => {
       setSaveNotice('Saved to your sets ✓');
       setTimeout(() => setSaveNotice(''), 2200);
     } catch (error) {
-      console.error("Failed to save set:", error);
+      console.error('Failed to save set:', error);
     }
   };
 
@@ -463,7 +494,7 @@ const ProblemOutput = (): React.ReactElement => {
       setDuplicateName('');
       setShowVersionBanner(true);
     } catch (error) {
-      console.error("Failed to duplicate set:", error);
+      console.error('Failed to duplicate set:', error);
     }
   };
 
@@ -484,7 +515,7 @@ const ProblemOutput = (): React.ReactElement => {
         images[q.id] = await toPng(node, {
           pixelRatio: 2,
           backgroundColor: '#ffffff',
-          skipFonts: true
+          skipFonts: true,
         });
       } catch (err) {
         console.error(`Error capturing graph ${q.id}:`, err);
@@ -503,14 +534,13 @@ const ProblemOutput = (): React.ReactElement => {
         name: set!.name || set!.topic || 'Untitled set',
         questions: questions,
         mode: mode,
-        graphImages
+        graphImages,
       });
 
       saveAs(blob, `${set!.name || 'problem-set'}-${mode}.docx`);
-
     } catch (error) {
-      console.error("Error exporting:", error);
-      alert("There was a problem generating the Word file. Please try again.");
+      console.error('Error exporting:', error);
+      alert(t('There was a problem generating the Word file. Please try again.'));
     }
   };
 
@@ -518,20 +548,23 @@ const ProblemOutput = (): React.ReactElement => {
   const outputIncludes = set.formData?.outputIncludes || [];
 
   return (
-    <main
-      className={`${styles.outputPage} ${printMode === 'student' ? styles.printAsStudent : styles.printAsTeacher}`}
-    >
-      <header className={styles.topbar}>
+    <main className={`${styles.outputPage} ${printMode === 'student' ? styles.printAsStudent : styles.printAsTeacher}`}>
+      <header className={`${styles.topbar} languageHeader`}>
         <LogoBanner />
-        <ProfileButton />
+        <div className="headerActions">
+          <LanguageToggle />
+          <ProfileButton />
+        </div>
       </header>
 
       <div className={styles.shell}>
         <section className={styles.setHeader}>
           <div>
-            <span className={styles.eyebrow}>Generated set</span>
-            <h1>{set.name || set.topic || 'Untitled set'}</h1>
-            <p>{questions.length} questions · {set.prepLevel}</p>
+            <span className={styles.eyebrow}>{t('Generated set')}</span>
+            <h1>{set.name || set.topic || t('Untitled set')}</h1>
+            <p>
+              {questionCount(questions.length)} · {label(set.prepLevel)}
+            </p>
           </div>
           <div className={styles.setActions}>
             <FeedbackButton
@@ -541,52 +574,83 @@ const ProblemOutput = (): React.ReactElement => {
               }}
             />
             <div className={styles.setOptionsWrap} ref={setMenuRef}>
-              <button
-                className={styles.secondaryButton}
-                onClick={() => setShowSetMenu(!showSetMenu)}
-              >
-                Options ▾
+              <button className={styles.secondaryButton} onClick={() => setShowSetMenu(!showSetMenu)}>
+                {t('Options ▾')}
               </button>
 
               {showSetMenu && (
                 <div className={styles.setOptionsDropdown}>
-                  <button className={styles.menuItem} onClick={() => { setShowEditSetModal(true); setShowSetMenu(false); }}>
-                    Edit set
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setShowEditSetModal(true);
+                      setShowSetMenu(false);
+                    }}
+                  >
+                    {t('Edit set')}
                   </button>
-                  <button className={styles.menuItem} onClick={() => { setShowSettingsModal(true); setShowSetMenu(false); }}>
-                    Output settings
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setShowSettingsModal(true);
+                      setShowSetMenu(false);
+                    }}
+                  >
+                    {t('Output settings')}
                   </button>
-                  <button className={styles.menuItem} onClick={() => { setShowDuplicateModal(true); setShowSetMenu(false); }}>
-                    Create similar version
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setShowDuplicateModal(true);
+                      setShowSetMenu(false);
+                    }}
+                  >
+                    {t('Create similar version')}
                   </button>
                   <div className={styles.menuDivider} />
-                  <button className={styles.menuItem} onClick={() => { handleExportWord('student'); setShowSetMenu(false); }}>
-                    Export student sheet (Word)
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      handleExportWord('student');
+                      setShowSetMenu(false);
+                    }}
+                  >
+                    {t('Export student sheet (Word)')}
                   </button>
-                  <button className={styles.menuItem} onClick={() => { handleExportWord('teacher'); setShowSetMenu(false); }}>
-                    Export answer key (Word)
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      handleExportWord('teacher');
+                      setShowSetMenu(false);
+                    }}
+                  >
+                    {t('Export answer key (Word)')}
                   </button>
                 </div>
               )}
             </div>
 
             <button className={styles.primaryButton} onClick={() => setShowSaveModal(true)}>
-              Save set
+              {t('Save set')}
             </button>
           </div>
         </section>
 
-        {saveNotice && <p className={styles.saveNotice}>✓ {saveNotice}</p>}
+        {saveNotice && <p className={styles.saveNotice}>✓ {label(saveNotice)}</p>}
         {set.versionOf && showVersionBanner && (
           <div className={styles.versionBanner}>
             <div className={styles.versionBannerText}>
-              <strong>You're working on a new version.</strong>
-              <span>Created from "{set.versionOf}" , the original set won't be affected by changes made here.</span>
+              <strong>{t("You're working on a new version.")}</strong>
+              <span>
+                {t('Created from "{name}", the original set won\'t be affected by changes made here.', {
+                  name: set.versionOf,
+                })}
+              </span>
             </div>
             <button
               className={styles.versionBannerClose}
               onClick={() => setShowVersionBanner(false)}
-              aria-label="Close banner"
+              aria-label={t('Close banner')}
             >
               ×
             </button>
@@ -595,15 +659,15 @@ const ProblemOutput = (): React.ReactElement => {
 
         {outputIncludes.includes('Instructions') && (
           <div className={styles.setInstructions}>
-            Instructions: Solve the following problems showing all your work.
+            {t('Instructions: Solve the following problems showing all your work.')}
           </div>
         )}
 
         <div className={styles.printHeader}>
-          <h1>{set.name || set.topic || 'Untitled set'}</h1>
+          <h1>{set.name || set.topic || t('Untitled set')}</h1>
           <p>
-            {set.prepLevel} · {questions.length} questions
-            {printMode === 'teacher' && <span className={styles.printKeyTag}> · Answer key</span>}
+            {label(set.prepLevel)} · {questionCount(questions.length)}
+            {printMode === 'teacher' && <span className={styles.printKeyTag}> {t('· Answer key')}</span>}
           </p>
         </div>
 
@@ -624,32 +688,31 @@ const ProblemOutput = (): React.ReactElement => {
                 onDrop={() => handleDrop(index)}
                 onDragEnd={handleDragEnd}
               >
-                <div className={styles.dragHandle} aria-hidden="true">⠿</div>
+                <div className={styles.dragHandle} aria-hidden="true">
+                  ⠿
+                </div>
 
                 <div className={styles.questionMain}>
                   <div className={styles.questionTop}>
-                    <span className={styles.questionIndex}>Question {index + 1}</span>
+                    <span className={styles.questionIndex}>
+                      {t('Question')} {index + 1}
+                    </span>
                   </div>
 
                   {editingId === q.id ? (
                     <div className={styles.editArea}>
-
-                      <button
-                        className={styles.builderToggleBtn}
-                        onClick={() => setShowMathBuilder(!showMathBuilder)}
-                      >
-                        {showMathBuilder ? 'Close equation editor' : 'Open equation editor'}
+                      <button className={styles.builderToggleBtn} onClick={() => setShowMathBuilder(!showMathBuilder)}>
+                        {showMathBuilder ? t('Close equation editor') : t('Open equation editor')}
                       </button>
 
                       {showMathBuilder && (
                         <div className={styles.mathBuilderContainer}>
-                          <span className={styles.builderHint}>Build your equation below and insert it into the text.</span>
+                          <span className={styles.builderHint}>
+                            {t('Build your equation below and insert it into the text.')}
+                          </span>
                           <div className={styles.mathBuilderRow}>
                             {/* @ts-ignore */}
-                            <math-field
-                              ref={mathFieldRef}
-                              className={styles.mathFieldElement}
-                            />
+                            <math-field ref={mathFieldRef} className={styles.mathFieldElement} />
                             <button
                               className={styles.insertBtn}
                               onClick={() => {
@@ -677,7 +740,7 @@ const ProblemOutput = (): React.ReactElement => {
                                 }
                               }}
                             >
-                              Insert
+                              {t('Insert')}
                             </button>
                           </div>
                         </div>
@@ -689,34 +752,46 @@ const ProblemOutput = (): React.ReactElement => {
                           className={styles.splitTextarea}
                           value={draftText}
                           onChange={(e) => setDraftText(e.target.value)}
-                          placeholder="Write your question here..."
+                          placeholder={t('Write your question here...')}
                         />
                         <div className={styles.livePreviewBox}>
-                          <span className={styles.previewLabel}>Preview</span>
+                          <span className={styles.previewLabel}>{t('Preview')}</span>
                           <div className={styles.questionPrompt}>
                             <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                              {draftText || '*Start typing to see preview...*'}
+                              {draftText || t('*Start typing to see preview...*')}
                             </ReactMarkdown>
                           </div>
                         </div>
                       </div>
 
                       <div className={styles.editActions}>
-                        <button className={styles.secondaryButton} onClick={() => setEditingId(null)} disabled={!!savingMode}>
-                          Cancel
+                        <button
+                          className={styles.secondaryButton}
+                          onClick={() => setEditingId(null)}
+                          disabled={!!savingMode}
+                        >
+                          {t('Cancel')}
                         </button>
-                        <button className={styles.secondaryButton} onClick={() => saveEdit(q.id, false)} disabled={!!savingMode}>
-                          {savingMode === 'text' ? 'Saving...' : 'Save text only'}
+                        <button
+                          className={styles.secondaryButton}
+                          onClick={() => saveEdit(q.id, false)}
+                          disabled={!!savingMode}
+                        >
+                          {savingMode === 'text' ? t('Saving...') : t('Save text only')}
                         </button>
-                        <button className={styles.primaryButton} onClick={() => saveEdit(q.id, true)} disabled={!!savingMode}>
-                          {savingMode === 'resync' ? 'Updating...' : 'Save & update'}
+                        <button
+                          className={styles.primaryButton}
+                          onClick={() => saveEdit(q.id, true)}
+                          disabled={!!savingMode}
+                        >
+                          {savingMode === 'resync' ? t('Updating...') : t('Save & update')}
                         </button>
                       </div>
                     </div>
                   ) : aiEditingId === q.id ? (
                     <div className={styles.editArea}>
                       <div className={styles.aiEditPreview}>
-                        <span className={styles.previewLabel}>Original</span>
+                        <span className={styles.previewLabel}>{t('Original')}</span>
                         <div className={styles.questionPrompt}>
                           <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                             {q.prompt}
@@ -726,14 +801,26 @@ const ProblemOutput = (): React.ReactElement => {
 
                       <textarea
                         rows={2}
-                        placeholder="What should the AI change? (e.g., 'Make it multiple choice', 'Change context to soccer')"
+                        placeholder={t(
+                          "What should the AI change? (e.g., 'Make it multiple choice', 'Change context to soccer')",
+                        )}
                         value={aiPromptText}
                         onChange={(e) => setAiPromptText(e.target.value)}
                       />
                       <div className={styles.editActions}>
-                        <button className={styles.secondaryButton} onClick={() => setAiEditingId(null)} disabled={isAiLoading}>Cancel</button>
-                        <button className={styles.primaryButton} onClick={() => handleAiEdit(q.id)} disabled={isAiLoading || !aiPromptText.trim()}>
-                          {isAiLoading ? 'Generating...' : 'Generate Update'}
+                        <button
+                          className={styles.secondaryButton}
+                          onClick={() => setAiEditingId(null)}
+                          disabled={isAiLoading}
+                        >
+                          {t('Cancel')}
+                        </button>
+                        <button
+                          className={styles.primaryButton}
+                          onClick={() => handleAiEdit(q.id)}
+                          disabled={isAiLoading || !aiPromptText.trim()}
+                        >
+                          {isAiLoading ? t('Generating...') : t('Generate Update')}
                         </button>
                       </div>
                     </div>
@@ -747,23 +834,35 @@ const ProblemOutput = (): React.ReactElement => {
 
                       {effIncludes.includes('Hints') && q.hint && (
                         <div className={styles.hintBox}>
-                          <strong>Hint:</strong> <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{q.hint}</ReactMarkdown>
+                          <strong>{t('Hint:')}</strong>{' '}
+                          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                            {q.hint}
+                          </ReactMarkdown>
                         </div>
                       )}
                       {effIncludes.includes('Teacher tip') && (
                         <div className={styles.teacherTipBox}>
                           <div className={styles.teacherTipBoxHeader}>
                             <span className={styles.teacherTipBoxLabel}>
-                              Teacher tip <span className={styles.teacherTipBoxNote}></span>
+                              {t('Teacher tip')} <span className={styles.teacherTipBoxNote}></span>
                             </span>
                             {editingTipId !== q.id && (
                               <button
                                 type="button"
                                 className={styles.teacherTipEditIcon}
                                 onClick={() => startEditTip(q)}
-                                aria-label="Edit teacher tip"
+                                aria-label={t('Edit teacher tip')}
                               >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
                                   <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                                 </svg>
                               </button>
@@ -777,7 +876,7 @@ const ProblemOutput = (): React.ReactElement => {
                                 value={tipDraft}
                                 onChange={(e) => setTipDraft(e.target.value)}
                                 autoFocus
-                                placeholder="Write a quick tip for this question..."
+                                placeholder={t('Write a quick tip for this question...')}
                               />
                               <div className={styles.teacherTipEditActions}>
                                 <button
@@ -785,33 +884,29 @@ const ProblemOutput = (): React.ReactElement => {
                                   onClick={cancelEditTip}
                                   disabled={savingTipId === q.id}
                                 >
-                                  Cancel
+                                  {t('Cancel')}
                                 </button>
                                 <button
                                   className={styles.primaryButton}
                                   onClick={() => saveTip(q)}
                                   disabled={savingTipId === q.id}
                                 >
-                                  {savingTipId === q.id ? 'Saving...' : 'Save'}
+                                  {savingTipId === q.id ? t('Saving...') : t('Save')}
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div
-                              className={styles.teacherTipBoxText}
-                              onClick={() => startEditTip(q)}
-                            >
+                            <div className={styles.teacherTipBoxText} onClick={() => startEditTip(q)}>
                               {q.teacherTip ? (
                                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                                   {q.teacherTip}
                                 </ReactMarkdown>
                               ) : (
-                                <em>No tip yet - click to write one</em>
+                                <em>{t('No tip yet - click to write one')}</em>
                               )}
                             </div>
                           )}
                         </div>
-
                       )}
 
                       {effDisplay.includes('Graph / diagram space') && (
@@ -823,17 +918,17 @@ const ProblemOutput = (): React.ReactElement => {
 
                       {effDisplay.includes('Answer space') && (
                         <div className={styles.answerLine}>
-                          Answer: _________________________________________________
+                          {t('Answer: _________________________________________________')}
                         </div>
                       )}
 
                       {(effIncludes.includes('Answer key') || effIncludes.includes('Worked solutions')) && (
                         <div className={styles.teacherKeyBlock}>
-                          <span className={styles.teacherKeyLabel}>Teacher Key Visible</span>
+                          <span className={styles.teacherKeyLabel}>{t('Teacher Key Visible')}</span>
 
                           {effIncludes.includes('Worked solutions') && q.solution && (
                             <div className={styles.workedSolution}>
-                              <strong>Solution Steps:</strong>
+                              <strong>{t('Solution Steps:')}</strong>
                               <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                                 {q.solution}
                               </ReactMarkdown>
@@ -842,7 +937,7 @@ const ProblemOutput = (): React.ReactElement => {
 
                           {effIncludes.includes('Answer key') && q.answer && (
                             <div className={styles.finalAnswer}>
-                              <span>Final Answer:</span>
+                              <span>{t('Final Answer:')}</span>
                               <span>
                                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                                   {q.answer}
@@ -858,39 +953,32 @@ const ProblemOutput = (): React.ReactElement => {
                   <div className={styles.tagRow}>
                     {q.topic && <TagBadge kind="topic" label={q.topic} />}
                     {q.subtopic && <TagBadge kind="subtopic" label={q.subtopic} />}
-                    {(q.prepLevel || set.prepLevel) && (
-                      <TagBadge kind="prep" label={q.prepLevel || set.prepLevel} />
-                    )}
+                    {(q.prepLevel || set.prepLevel) && <TagBadge kind="prep" label={q.prepLevel || set.prepLevel} />}
                     {(effDisplay.includes('Difficulty tag') || effDisplay.length === 0) && q.difficulty && (
                       <TagBadge kind="difficulty" label={q.difficulty} />
                     )}
                     {isCustom && (
-                      <TagBadge
-                        kind="custom"
-                        label="Personalized"
-                        onClear={() => resetQuestionOverrides(q)}
-                      />
+                      <TagBadge kind="custom" label={t('Personalized')} onClear={() => resetQuestionOverrides(q)} />
                     )}
                   </div>
                 </div>
 
                 <div className={styles.questionSidebar}>
-
                   {settingsQuestionId === q.id && (
                     <div className={styles.sleekPopover} ref={questionSettingsRef}>
                       <div className={styles.sleekHeader}>
-                        <h4>Format Settings</h4>
+                        <h4>{t('Format Settings')}</h4>
                         <button
                           className={styles.sleekClose}
                           onClick={() => setSettingsQuestionId(null)}
-                          aria-label="Close"
+                          aria-label={t('Close')}
                         >
                           ×
                         </button>
                       </div>
 
                       <div className={styles.sleekScrollArea}>
-                        <span className={styles.sleekSectionTitle}>Worksheet</span>
+                        <span className={styles.sleekSectionTitle}>{t('Worksheet')}</span>
                         <div className={styles.sleekToggleList}>
                           {QUESTION_INCLUDE_OPTIONS.map((o) => (
                             <label key={o} className={styles.sleekToggle}>
@@ -899,7 +987,7 @@ const ProblemOutput = (): React.ReactElement => {
                                 checked={effIncludes.includes(o)}
                                 onChange={() => toggleQuestionInclude(q, o, outputIncludes)}
                               />
-                              <span>{o}</span>
+                              <span>{label(o)}</span>
                             </label>
                           ))}
                           {QUESTION_DISPLAY_OPTIONS.map((d) => (
@@ -909,13 +997,13 @@ const ProblemOutput = (): React.ReactElement => {
                                 checked={effDisplay.includes(d)}
                                 onChange={() => toggleQuestionDisplay(q, d, displayOptions)}
                               />
-                              <span>{d}</span>
+                              <span>{label(d)}</span>
                             </label>
                           ))}
                         </div>
 
                         <span className={styles.sleekSectionTitle} style={{ color: 'var(--violet)' }}>
-                          Teacher Key
+                          {t('Teacher Key')}{' '}
                         </span>
                         <div className={styles.sleekToggleList}>
                           {TEACHER_INCLUDE_OPTIONS.map((o) => (
@@ -925,7 +1013,7 @@ const ProblemOutput = (): React.ReactElement => {
                                 checked={effIncludes.includes(o)}
                                 onChange={() => toggleQuestionInclude(q, o, outputIncludes)}
                               />
-                              <span>{o}</span>
+                              <span>{label(o)}</span>
                             </label>
                           ))}
                         </div>
@@ -933,12 +1021,13 @@ const ProblemOutput = (): React.ReactElement => {
                         {effDisplay.includes('Graph / diagram space') && (
                           <div style={{ marginTop: '12px', paddingTop: '0px' }}>
                             <GraphSettingsEditor
-                              currentConfig={q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG}
+                              currentConfig={
+                                q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG
+                              }
                               onUpdate={(newConfig) => updateGraphConfig(q, newConfig)}
                             />
                           </div>
                         )}
-
                       </div>
 
                       <div className={styles.sleekFooter}>
@@ -947,33 +1036,36 @@ const ProblemOutput = (): React.ReactElement => {
                           onClick={() => resetQuestionOverrides(q)}
                           disabled={!isCustom}
                         >
-                          Clear custom settings
+                          {t('Clear custom settings')}
                         </button>
                       </div>
                     </div>
                   )}
 
                   <button className={`${styles.sidebarControl} ${styles.aiBtn}`} onClick={() => startAiEdit(q)}>
-                    ✦ Edit problem (AI)
+                    {t('✦ Edit problem (AI)')}
                   </button>
                   <button
                     className={`${styles.sidebarControl} ${styles.questionSettingsBtn}`}
                     onClick={() => setSettingsQuestionId(settingsQuestionId === q.id ? null : q.id)}
                   >
-                    Format Settings
+                    {t('Format Settings')}
                   </button>
                   <button className={styles.sidebarControl} onClick={() => startEdit(q)}>
-                    Edit text
+                    {t('Edit text')}
                   </button>
                   <button
                     className={styles.sidebarControl}
                     onClick={() => moreLikeThis(q)}
                     disabled={altLoadingId === q.id}
                   >
-                    {altLoadingId === q.id ? 'Generating...' : 'Alternative'}
+                    {altLoadingId === q.id ? t('Generating...') : t('Alternative')}
                   </button>
-                  <button className={`${styles.sidebarControl} ${styles.deleteBtn}`} onClick={() => setPendingDelete(q)}>
-                    Delete
+                  <button
+                    className={`${styles.sidebarControl} ${styles.deleteBtn}`}
+                    onClick={() => setPendingDelete(q)}
+                  >
+                    {t('Delete')}
                   </button>
                 </div>
               </li>
@@ -985,23 +1077,29 @@ const ProblemOutput = (): React.ReactElement => {
       {showEditSetModal && (
         <div className={styles.modalOverlay} onClick={() => setShowEditSetModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h3>Edit Set</h3>
+            <h3>{t('Edit Set')}</h3>
             <p className={styles.modalBody}>
-              Describe what you want to change globally (e.g., "Make all problems about hockey").
+              {t('Describe what you want to change globally (e.g., "Make all problems about hockey").')}
             </p>
             <textarea
               className={styles.modalTextarea}
               rows={3}
-              placeholder="Type your AI instructions here..."
+              placeholder={t('Type your AI instructions here...')}
               value={globalPrompt}
               onChange={(e) => setGlobalPrompt(e.target.value)}
               disabled={isGlobalEditing}
             />
             <div className={styles.modalActions} style={{ alignItems: 'center' }}>
               <div style={{ flex: 1 }}></div>
-              <button className={styles.secondaryButton} onClick={() => setShowEditSetModal(false)}>Cancel</button>
-              <button className={styles.primaryButton} onClick={handleGlobalEdit} disabled={!globalPrompt.trim() || isGlobalEditing}>
-                {isGlobalEditing ? 'Updating...' : 'Update set'}
+              <button className={styles.secondaryButton} onClick={() => setShowEditSetModal(false)}>
+                {t('Cancel')}
+              </button>
+              <button
+                className={styles.primaryButton}
+                onClick={handleGlobalEdit}
+                disabled={!globalPrompt.trim() || isGlobalEditing}
+              >
+                {isGlobalEditing ? t('Updating...') : t('Update set')}
               </button>
             </div>
           </div>
@@ -1011,14 +1109,14 @@ const ProblemOutput = (): React.ReactElement => {
       {showSettingsModal && (
         <div className={styles.modalOverlay} onClick={() => setShowSettingsModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h3>Edit output settings</h3>
+            <h3>{t('Edit output settings')}</h3>
             <p className={styles.modalBody}>
-              Toggle what appears on the student worksheet and teacher key. Changes apply instantly.
+              {t('Toggle what appears on the student worksheet and teacher key. Changes apply instantly.')}
             </p>
 
             <div className={styles.settingsGroup}>
               <span className={styles.sectionLabelTeal}>
-                Student Worksheet <span className={styles.sectionLabelNote}>(What students see)</span>
+                {t('Student Worksheet')} <span className={styles.sectionLabelNote}>{t('(What students see)')}</span>
               </span>
               <div className={styles.checkGrid}>
                 {STUDENT_INCLUDE_OPTIONS.map((o) => (
@@ -1029,7 +1127,7 @@ const ProblemOutput = (): React.ReactElement => {
                       onChange={() => toggleOutputInclude(o)}
                     />
                     <span className={styles.checkBox}>✓</span>
-                    <span>{o}</span>
+                    <span>{label(o)}</span>
                   </label>
                 ))}
                 {STUDENT_DISPLAY_OPTIONS.map((d) => (
@@ -1040,7 +1138,7 @@ const ProblemOutput = (): React.ReactElement => {
                       onChange={() => toggleDisplayOption(d)}
                     />
                     <span className={styles.checkBox}>✓</span>
-                    <span>{d}</span>
+                    <span>{label(d)}</span>
                   </label>
                 ))}
               </div>
@@ -1048,7 +1146,8 @@ const ProblemOutput = (): React.ReactElement => {
 
             <div className={`${styles.settingsGroup} ${styles.settingsGroupTeacher}`}>
               <span className={styles.sectionLabelViolet}>
-                Teacher Key <span className={styles.sectionLabelNote}>(What you see)</span>
+                {t('Teacher Key')}
+                <span className={styles.sectionLabelNote}>{t('(What you see)')}</span>
               </span>
               <div className={styles.checkGrid}>
                 {TEACHER_INCLUDE_OPTIONS.map((o) => (
@@ -1059,7 +1158,7 @@ const ProblemOutput = (): React.ReactElement => {
                       onChange={() => toggleOutputInclude(o)}
                     />
                     <span className={styles.checkBox}>✓</span>
-                    <span>{o}</span>
+                    <span>{label(o)}</span>
                   </label>
                 ))}
               </div>
@@ -1077,7 +1176,9 @@ const ProblemOutput = (): React.ReactElement => {
             )}
 
             <div className={styles.modalActions}>
-              <button className={styles.primaryButton} onClick={() => setShowSettingsModal(false)}>Done</button>
+              <button className={styles.primaryButton} onClick={() => setShowSettingsModal(false)}>
+                {t('Done')}
+              </button>
             </div>
           </div>
         </div>
@@ -1086,19 +1187,21 @@ const ProblemOutput = (): React.ReactElement => {
       {showSaveModal && (
         <div className={styles.modalOverlay} onClick={() => setShowSaveModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h3>Ready to save!</h3>
-            <p className={styles.modalBody}>
-              Confirm the name for this set before saving it to your profile.
-            </p>
+            <h3>{t('Ready to save!')}</h3>
+            <p className={styles.modalBody}>{t('Confirm the name for this set before saving it to your profile.')}</p>
             <input
               className={styles.modalTextarea}
               value={setName}
               onChange={(e) => setSetName(e.target.value)}
-              placeholder="Set name"
+              placeholder={t('Set name')}
             />
             <div className={styles.modalActions}>
-              <button className={styles.secondaryButton} onClick={() => setShowSaveModal(false)}>Cancel</button>
-              <button className={styles.primaryButton} onClick={handleSaveSet} disabled={!setName.trim()}>Confirm Save</button>
+              <button className={styles.secondaryButton} onClick={() => setShowSaveModal(false)}>
+                {t('Cancel')}
+              </button>
+              <button className={styles.primaryButton} onClick={handleSaveSet} disabled={!setName.trim()}>
+                {t('Confirm Save')}
+              </button>
             </div>
           </div>
         </div>
@@ -1107,14 +1210,20 @@ const ProblemOutput = (): React.ReactElement => {
       {pendingDelete && (
         <div className={styles.modalOverlay} onClick={() => setPendingDelete(null)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h3>Delete this question?</h3>
+            <h3>{t('Delete this question?')}</h3>
             <p className={styles.modalBody}>
-              "{pendingDelete.prompt.length > 90 ? `${pendingDelete.prompt.slice(0, 90)}…` : pendingDelete.prompt}"
-              will be removed from this set. This can't be undone.
+              {t('"{question}" will be removed from this set. This can\'t be undone.', {
+                question:
+                  pendingDelete.prompt.length > 90 ? `${pendingDelete.prompt.slice(0, 90)}…` : pendingDelete.prompt,
+              })}
             </p>
             <div className={styles.modalActions}>
-              <button className={styles.secondaryButton} onClick={() => setPendingDelete(null)}>Cancel</button>
-              <button className={styles.dangerButton} onClick={confirmDelete}>Delete question</button>
+              <button className={styles.secondaryButton} onClick={() => setPendingDelete(null)}>
+                {t('Cancel')}
+              </button>
+              <button className={styles.dangerButton} onClick={confirmDelete}>
+                {t('Delete question')}
+              </button>
             </div>
           </div>
         </div>
@@ -1123,20 +1232,20 @@ const ProblemOutput = (): React.ReactElement => {
       {showDuplicateModal && (
         <div className={styles.modalOverlay} onClick={() => setShowDuplicateModal(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h3>Save as new version</h3>
-            <p className={styles.modalBody}>
-              Give this version a name. The original set stays untouched.
-            </p>
+            <h3>{t('Save as new version')}</h3>
+            <p className={styles.modalBody}>{t('Give this version a name. The original set stays untouched.')}</p>
             <input
               className={styles.modalTextarea}
               value={duplicateName}
               onChange={(e) => setDuplicateName(e.target.value)}
-              placeholder="e.g., Harder version"
+              placeholder={t('e.g., Harder version')}
             />
             <div className={styles.modalActions}>
-              <button className={styles.secondaryButton} onClick={() => setShowDuplicateModal(false)}>Cancel</button>
+              <button className={styles.secondaryButton} onClick={() => setShowDuplicateModal(false)}>
+                {t('Cancel')}
+              </button>
               <button className={styles.primaryButton} onClick={handleDuplicateSet} disabled={!duplicateName.trim()}>
-                Duplicate
+                {t('Duplicate')}
               </button>
             </div>
           </div>

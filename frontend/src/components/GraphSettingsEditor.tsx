@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/language';
 import React from 'react';
 import type { GraphConfig, GraphStyle } from '../types/problem';
 import styles from '../styles/OutputPageStyles.module.css';
@@ -8,9 +9,10 @@ interface GraphSettingsEditorProps {
 }
 
 const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig, onUpdate }) => {
+  const { t, label } = useLanguage();
   return (
     <>
-      <span className={styles.sleekSectionTitle}>Graph Layout</span>
+      <span className={styles.sleekSectionTitle}>{t('Graph Layout')}</span>
       <div className={styles.segmentedControl}>
         {[
           { label: 'All', style: 'axes', x: [-10, 10], y: [-10, 10] },
@@ -18,7 +20,7 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
           { label: 'Q2', style: 'axes', x: [-10, 0], y: [0, 10] },
           { label: 'Q3', style: 'axes', x: [-10, 0], y: [-10, 0] },
           { label: 'Q4', style: 'axes', x: [0, 10], y: [-10, 0] },
-          { label: 'Off', style: 'blank-grid', x: [-10, 10], y: [-10, 10] }
+          { label: 'Off', style: 'blank-grid', x: [-10, 10], y: [-10, 10] },
         ].map((opt) => {
           const isActive =
             (currentConfig.xRange?.[0] ?? -10) === opt.x[0] &&
@@ -32,29 +34,39 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
               key={opt.label}
               type="button"
               className={`${styles.segmentedBtn} ${isActive ? styles.segmentedActive : ''}`}
-              onClick={() => onUpdate({ style: opt.style as GraphStyle, xRange: opt.x as [number, number], yRange: opt.y as [number, number] })}
+              onClick={() =>
+                onUpdate({
+                  style: opt.style as GraphStyle,
+                  xRange: opt.x as [number, number],
+                  yRange: opt.y as [number, number],
+                })
+              }
             >
-              {opt.label}
+              {label(opt.label)}
             </button>
           );
         })}
       </div>
 
-      <span className={styles.sleekSectionTitle}>Size</span>
+      <span className={styles.sleekSectionTitle}>{t('Size')}</span>
       <div className={styles.segmentedControl}>
-        {[{ id: 'sm', label: 'Small' }, { id: 'md', label: 'Medium' }, { id: 'lg', label: 'Large' }].map((opt) => (
+        {[
+          { id: 'sm', label: 'Small' },
+          { id: 'md', label: 'Medium' },
+          { id: 'lg', label: 'Large' },
+        ].map((opt) => (
           <button
             key={opt.id}
             type="button"
             className={`${styles.segmentedBtn} ${currentConfig.size === opt.id ? styles.segmentedActive : ''}`}
             onClick={() => onUpdate({ size: opt.id as 'sm' | 'md' | 'lg' })}
           >
-            {opt.label}
+            {label(opt.label)}
           </button>
         ))}
       </div>
 
-      <span className={styles.sleekSectionTitle}>Scale</span>
+      <span className={styles.sleekSectionTitle}>{t('Scale')}</span>
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
         <div className={styles.segmentedControl} style={{ flex: 1 }}>
           {[1, 2, 5].map((s) => (
@@ -69,7 +81,7 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
           ))}
         </div>
         <div className={styles.axisInputWrap} style={{ width: '85px', flexShrink: 0 }}>
-          <span className={styles.axisInputTag}>Step</span>
+          <span className={styles.axisInputTag}>{t('Step')}</span>
           <input
             type="text"
             className={styles.sleekInput}
@@ -89,12 +101,12 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
           checked={currentConfig.showLabels ?? true}
           onChange={(e) => onUpdate({ showLabels: e.target.checked })}
         />
-        <span>Show axis labels</span>
+        <span>{t('Show axis labels')}</span>
       </label>
 
-      <span className={styles.sleekSectionTitle}>Axis Range</span>
+      <span className={styles.sleekSectionTitle}>{t('Axis Range')}</span>
       <div className={styles.axisGroup}>
-        <span className={styles.axisGroupLabel}>X Axis</span>
+        <span className={styles.axisGroupLabel}>{t('X Axis')}</span>
         <div className={styles.axisInputRow}>
           <div className={styles.axisInputWrap}>
             <span className={styles.axisInputTag}>−X</span>
@@ -104,12 +116,12 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
               value={currentConfig.xRange?.[0] ?? -10}
               onChange={(e) => {
                 const val = e.target.value;
-                const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
+                const num = val === '-' || val === '' || val.endsWith('.') ? (val as any) : Number(val);
                 onUpdate({ xRange: [num, currentConfig.xRange?.[1] ?? 10] });
               }}
             />
           </div>
-          <span className={styles.sleekAxisDivider}>to</span>
+          <span className={styles.sleekAxisDivider}>{t('to')}</span>
           <div className={styles.axisInputWrap}>
             <span className={styles.axisInputTag}>X</span>
             <input
@@ -118,7 +130,7 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
               value={currentConfig.xRange?.[1] ?? 10}
               onChange={(e) => {
                 const val = e.target.value;
-                const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
+                const num = val === '-' || val === '' || val.endsWith('.') ? (val as any) : Number(val);
                 onUpdate({ xRange: [currentConfig.xRange?.[0] ?? -10, num] });
               }}
             />
@@ -127,7 +139,7 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
       </div>
 
       <div className={styles.axisGroup}>
-        <span className={styles.axisGroupLabel}>Y Axis</span>
+        <span className={styles.axisGroupLabel}>{t('Y Axis')}</span>
         <div className={styles.axisInputRow}>
           <div className={styles.axisInputWrap}>
             <span className={styles.axisInputTag}>−Y</span>
@@ -137,12 +149,12 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
               value={currentConfig.yRange?.[0] ?? -10}
               onChange={(e) => {
                 const val = e.target.value;
-                const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
+                const num = val === '-' || val === '' || val.endsWith('.') ? (val as any) : Number(val);
                 onUpdate({ yRange: [num, currentConfig.yRange?.[1] ?? 10] });
               }}
             />
           </div>
-          <span className={styles.sleekAxisDivider}>to</span>
+          <span className={styles.sleekAxisDivider}>{t('to')}</span>
           <div className={styles.axisInputWrap}>
             <span className={styles.axisInputTag}>Y</span>
             <input
@@ -151,7 +163,7 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
               value={currentConfig.yRange?.[1] ?? 10}
               onChange={(e) => {
                 const val = e.target.value;
-                const num = val === '-' || val === '' || val.endsWith('.') ? val as any : Number(val);
+                const num = val === '-' || val === '' || val.endsWith('.') ? (val as any) : Number(val);
                 onUpdate({ yRange: [currentConfig.yRange?.[0] ?? -10, num] });
               }}
             />

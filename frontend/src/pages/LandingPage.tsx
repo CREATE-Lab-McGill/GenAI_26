@@ -1,8 +1,10 @@
+import LanguageToggle from '../components/LanguageToggle';
+import { useLanguage } from '../i18n/language';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../styles/LandingPageStyles.module.css';
 import TutorialModal from '../components/Tutorial';
-import { APP_TOUR_SLIDES } from '../services/tourContent';
+import { getAppTourSlides } from '../services/tourContent';
 import LogoBanner from '../components/LogoBanner';
 
 interface Step {
@@ -17,8 +19,7 @@ interface Pillar {
   icon: ReactNode;
 }
 
-const cx = (...classes: Array<string | false | undefined>): string =>
-  classes.filter(Boolean).join(' ');
+const cx = (...classes: Array<string | false | undefined>): string => classes.filter(Boolean).join(' ');
 
 const steps: Step[] = [
   {
@@ -73,25 +74,27 @@ const pillars: Pillar[] = [
 ];
 
 const LandingPage = (): React.ReactElement => {
+  const { t, label } = useLanguage();
   const navigate = useNavigate();
 
   return (
     <div className={styles.landingPage}>
-      <TutorialModal tourKey="app_intro_v1" slides={APP_TOUR_SLIDES} />
-      <header className={styles.landingNav}>
+      <TutorialModal tourKey="app_intro_v1" slides={getAppTourSlides(label)} />
+      <header className={`${styles.landingNav} languageHeader`}>
         <LogoBanner />
 
-        <nav className={styles.landingNavLinks} aria-label="Primary">
-          <a href="#how-it-works">How it works</a>
-          <a href="#for-teachers">For teachers</a>
+        <nav className={styles.landingNavLinks} aria-label={t('Primary')}>
+          <a href="#how-it-works">{t('How it works')}</a>
+          <a href="#for-teachers">{t('For teachers')}</a>
         </nav>
 
-        <div className={styles.landingNavActions}>
+        <div className={`${styles.landingNavActions} headerActions`}>
+          <LanguageToggle />
           <button className={styles.ghostButton} onClick={() => navigate('/account')}>
-            Sign in
+            {t('Sign in')}
           </button>
           <button className={styles.primaryButton} onClick={() => navigate('/dashboard')}>
-            Get started
+            {t('Get started')}
           </button>
         </div>
       </header>
@@ -99,20 +102,20 @@ const LandingPage = (): React.ReactElement => {
       <main>
         <section className={styles.hero}>
           <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>Generate. Review. Teach.</span>
+            <span className={styles.eyebrow}>{t('Generate. Review. Teach.')}</span>
             <h1>
-              Turn a topic into a<br />
-              <em>classroom-ready</em> problem set.
+              {t('Turn a topic into a')}
+              <br />
+              <em>{t('classroom-ready')}</em> {t('problem set.')}
             </h1>
             <p>
-              Tell CREATEMath what your students are learning, choose the difficulty, problem formats, and support level, then generate an editable problem set tailored to your classroom.
+              {t(
+                'Tell CREATEMath what your students are learning, choose the difficulty, problem formats, and support level, then generate an editable problem set tailored to your classroom.',
+              )}
             </p>
             <div className={styles.heroActions}>
-              <button
-                className={cx(styles.primaryButton, styles.large)}
-                onClick={() => navigate('/dashboard')}
-              >
-                Start generating <span aria-hidden="true">&rarr;</span>
+              <button className={cx(styles.primaryButton, styles.large)} onClick={() => navigate('/dashboard')}>
+                {t('Start generating')} <span aria-hidden="true">&rarr;</span>
               </button>
             </div>
           </div>
@@ -123,9 +126,9 @@ const LandingPage = (): React.ReactElement => {
               <div className={cx(styles.mockCard, styles.card2)} />
               <div className={cx(styles.mockCard, styles.card1)}>
                 <div className={styles.mockTags}>
-                  <span className={cx(styles.mockTag, styles.tagCurr)}>Curr &middot; Ratios</span>
-                  <span className={cx(styles.mockTag, styles.tagPrep)}>Sec III</span>
-                  <span className={cx(styles.mockTag, styles.tagDiff)}>Diff Hard</span>
+                  <span className={cx(styles.mockTag, styles.tagCurr)}>{t('Curr · Ratios')}</span>
+                  <span className={cx(styles.mockTag, styles.tagPrep)}>{t('Sec III')}</span>
+                  <span className={cx(styles.mockTag, styles.tagDiff)}>{t('Diff Hard')}</span>
                 </div>
                 <div className={cx(styles.mockLine, styles.line1)} />
                 <div className={cx(styles.mockLine, styles.line2)} />
@@ -142,8 +145,8 @@ const LandingPage = (): React.ReactElement => {
         </section>
 
         <section className={styles.howItWorks} id="how-it-works">
-          <span className={cx(styles.eyebrow, styles.center)}>How it works</span>
-          <h2>Three steps, start to classroom.</h2>
+          <span className={cx(styles.eyebrow, styles.center)}>{t('How it works')}</span>
+          <h2>{t('Three steps, start to classroom.')}</h2>
 
           <div className={styles.stepsRow}>
             {steps.map((step, i) => (
@@ -152,8 +155,8 @@ const LandingPage = (): React.ReactElement => {
                   <span className={styles.stepNumber}>{step.n}</span>
                   {i < steps.length - 1 && <span className={styles.stepLine} aria-hidden="true" />}
                 </div>
-                <h3>{step.title}</h3>
-                <p>{step.body}</p>
+                <h3>{label(step.title)}</h3>
+                <p>{label(step.body)}</p>
               </div>
             ))}
           </div>
@@ -164,28 +167,29 @@ const LandingPage = (): React.ReactElement => {
             {pillars.map((p) => (
               <div className={styles.pillarCard} key={p.title}>
                 <div className={styles.pillarIcon}>{p.icon}</div>
-                <h3>{p.title}</h3>
-                <p>{p.body}</p>
+                <h3>{label(p.title)}</h3>
+                <p>{label(p.body)}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section className={styles.ctaBand}>
-          <h2>Your next problem set is a few clicks away.</h2>
-          <p>Choose your topic, customize the settings, and let CREATEMath generate your next problem set.</p>
+          <h2>{t('Your next problem set is a few clicks away.')}</h2>
+          <p>{t('Choose your topic, customize the settings, and let CREATEMath generate your next problem set.')}</p>
           <button
             className={cx(styles.primaryButton, styles.large, styles.onDark)}
             onClick={() => navigate('/dashboard')}
           >
-            Start generating <span aria-hidden="true">&rarr;</span>
+            {t('Start generating')}
+            <span aria-hidden="true">&rarr;</span>
           </button>
         </section>
       </main>
 
       <footer className={styles.landingFooter}>
         <LogoBanner />
-        <p>Built for math instructors at every level.</p>
+        <p>{t('Built for math instructors at every level.')}</p>
       </footer>
     </div>
   );

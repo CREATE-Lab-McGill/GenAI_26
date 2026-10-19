@@ -73,3 +73,13 @@ export default defineConfig([
 ])
 
 ```
+
+## Interface languages
+
+The **Français** toggle appears in every page header and in the introductory tour. English is the initial default. The selected interface language is remembered in this browser under `createmath_interface_language`; if storage is blocked, switching still works for the current visit. Browser print labels follow the interface language. Generated problems, teacher-entered text, and downloaded Word documents keep their original language.
+
+Translations live in `src/i18n/messages.ts`. English source phrases are the typed message keys, and the French catalog must contain exactly the same keys. Use `t(key, values)` for interface copy and interpolated messages. Use `label(value)` only when displaying canonical application choices such as curriculum topics or formats. Keep option values, stored settings, and API payloads in their original English form; never pass generated prose or teacher-entered text through the translation helper.
+
+Run `npm test` for language preference, catalog coverage, route switching, draft preservation, and API compatibility checks. Run `npm run build` for TypeScript and production compilation.
+
+Before merging, review both languages at desktop and phone widths, switch while editing a draft or question, and check tutorials, dialogs, feedback, dates, and browser print previews. Capture English/French screenshots for the PR. Word headings and generated content should remain unchanged.

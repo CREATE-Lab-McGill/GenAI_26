@@ -419,3 +419,6 @@
   background: var(--teal-deep);
   box-shadow: 0 0 0 3px rgba(33, 137, 126, 0.16);
 }
+/* Keep the translated introduction and language control reachable on small screens. */
+.card { max-height: calc(100dvh - 40px); overflow-y: auto; }
+.actions { flex-wrap: wrap; row-gap: 12px; }

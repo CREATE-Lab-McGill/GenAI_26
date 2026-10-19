@@ -3,10 +3,13 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 
 import './index.css';
-import router from './routes/Routes'; 
+import LanguageProvider from './i18n/LanguageProvider';
+import router from './routes/Routes';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <LanguageProvider>
+      <RouterProvider router={router} />
+    </LanguageProvider>
   </StrictMode>,
 );
