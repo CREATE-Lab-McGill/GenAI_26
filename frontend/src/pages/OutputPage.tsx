@@ -96,6 +96,8 @@ const ProblemOutput = (): React.ReactElement => {
   const [tipDraft, setTipDraft] = useState('');
   const [savingTipId, setSavingTipId] = useState<string | null>(null);
 
+  const [pendingRecalculateId, setPendingRecalculateId] = useState<string | null>(null);
+
   // COLLAPSE
   // const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   // const [reorderMode, setReorderMode] = useState(false);
@@ -831,8 +833,8 @@ const ProblemOutput = (): React.ReactElement => {
                             <button className={styles.secondaryButton} onClick={() => saveEdit(q.id, false)} disabled={!!savingMode}>
                               {savingMode === 'text' ? 'Saving...' : 'Save text only'}
                             </button>
-                            <button className={styles.primaryButton} onClick={() => saveEdit(q.id, true)} disabled={!!savingMode}>
-                              {savingMode === 'resync' ? 'Updating...' : 'Save & update'}
+                            <button className={styles.primaryButton} onClick={() => setPendingRecalculateId(q.id)} disabled={!!savingMode}>
+                              Save and Recalculate
                             </button>
                           </div>
                         </div>
@@ -1101,6 +1103,41 @@ const ProblemOutput = (): React.ReactElement => {
           })}
         </ul>
       </div>
+
+      {pendingRecalculateId && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => {
+            if (savingMode !== 'resync') setPendingRecalculateId(null);
+          }}
+        >
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3>Save and Recalculate?</h3>
+            <p className={styles.modalBody}>
+              This will ask the AI to regenerate the solution based on your new text. You will not be able to revert this action. Are you sure you want to proceed?
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.secondaryButton}
+                onClick={() => setPendingRecalculateId(null)}
+                disabled={savingMode === 'resync'}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.primaryButton}
+                onClick={async () => {
+                  await saveEdit(pendingRecalculateId, true);
+                  setPendingRecalculateId(null);
+                }}
+                disabled={savingMode === 'resync'}
+              >
+                {savingMode === 'resync' ? 'Recalculating...' : 'Yes, recalculate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showEditSetModal && (
         <div className={styles.modalOverlay} onClick={() => setShowEditSetModal(false)}>
