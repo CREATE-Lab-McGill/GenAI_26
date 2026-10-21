@@ -276,6 +276,12 @@
   color: var(--ink);
 }
 
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .field em {
   font-style: normal;
   font-weight: 400;
