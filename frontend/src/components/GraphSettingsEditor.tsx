@@ -13,13 +13,19 @@ interface NumberFieldProps {
   value: number;
   onCommit: (n: number) => void;
   isValid?: (n: number) => boolean;
+  autoFocus?: boolean;
 }
 
-const NumberField: React.FC<NumberFieldProps> = ({ value, onCommit, isValid = () => true }) => {
+const NumberField: React.FC<NumberFieldProps> = ({ value, onCommit, isValid = () => true, autoFocus }) => {
   const [draft, setDraft] = useState(String(value));
 
   useEffect(() => {
-    setDraft(String(value));
+    setDraft((prev) => {
+      const parsed = parseFloat(prev);
+      if (parsed === value) return prev; 
+      if (prev === '-' || prev === '' || prev === '-.') return prev;
+      return String(value);
+    });
   }, [value]);
 
   const commit = () => {
@@ -38,9 +44,19 @@ const NumberField: React.FC<NumberFieldProps> = ({ value, onCommit, isValid = ()
       inputMode="decimal"
       className={styles.sleekInput}
       value={draft}
+      autoFocus={autoFocus}
       onChange={(e) => {
         const raw = e.target.value;
-        if (/^-?\d*\.?\d*$/.test(raw)) setDraft(raw);
+        if (/^-?\d*\.?\d*$/.test(raw)) {
+          setDraft(raw);
+          
+          const n = parseFloat(raw);
+          if (!isNaN(n) && Number.isFinite(n) && Math.abs(n) <= MAX_ABS && isValid(n)) {
+            if (!raw.endsWith('.')) {
+              onCommit(n);
+            }
+          }
+        }
       }}
       onBlur={commit}
       onKeyDown={(e) => {
@@ -72,6 +88,14 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
   const [xMin, xMax] = currentConfig.xRange ?? [-10, 10];
   const [yMin, yMax] = currentConfig.yRange ?? [-10, 10];
   const step = currentConfig.step ?? 2;
+
+  const [isCustomMode, setIsCustomMode] = useState(![1, 2, 5].includes(step));
+
+  useEffect(() => {
+    if (![1, 2, 5].includes(step)) {
+      setIsCustomMode(true);
+    }
+  }, [step]);
 
   return (
     <>
@@ -123,21 +147,34 @@ const GraphSettingsEditor: React.FC<GraphSettingsEditorProps> = ({ currentConfig
             <button
               key={s}
               type="button"
-              className={`${styles.segmentedBtn} ${step === s ? styles.segmentedActive : ''}`}
-              onClick={() => onUpdate({ step: s })}
+              className={`${styles.segmentedBtn} ${!isCustomMode && step === s ? styles.segmentedActive : ''}`}
+              onClick={() => {
+                setIsCustomMode(false);
+                onUpdate({ step: s });
+              }}
             >
               {s}
             </button>
           ))}
+          <button
+            type="button"
+            className={`${styles.segmentedBtn} ${isCustomMode ? styles.segmentedActive : ''}`}
+            onClick={() => setIsCustomMode(true)}
+          >
+            Custom
+          </button>
         </div>
-        <div className={styles.axisInputWrap} style={{ width: '85px', flexShrink: 0 }}>
-          <span className={styles.axisInputTag}>Step</span>
-          <NumberField
-            value={step}
-            isValid={(n) => n > 0}
-            onCommit={(n) => onUpdate({ step: n })}
-          />
-        </div>
+        
+        {isCustomMode && (
+          <div className={styles.customStepWrap}>
+            <NumberField
+              value={step}
+              isValid={(n) => n > 0}
+              onCommit={(n) => onUpdate({ step: n })}
+              autoFocus
+            />
+          </div>
+        )}
       </div>
 
       <label className={styles.sleekToggle} style={{ marginBottom: '12px' }}>
