@@ -24,7 +24,8 @@ import GraphSettingsEditor from '../components/GraphSettingsEditor';
 import LogoBanner from '../components/LogoBanner';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
-const collapsedKey = (id: string) => `mathcraft_collapsed_${id}`;
+// COLLAPSE
+// const collapsedKey = (id: string) => `mathcraft_collapsed_${id}`;
 
 const STUDENT_INCLUDE_OPTIONS: OutputInclude[] = ['Instructions', 'Hints'];
 const TEACHER_INCLUDE_OPTIONS: OutputInclude[] = ['Answer key', 'Worked solutions', 'Teacher tip'];
@@ -95,9 +96,10 @@ const ProblemOutput = (): React.ReactElement => {
   const [tipDraft, setTipDraft] = useState('');
   const [savingTipId, setSavingTipId] = useState<string | null>(null);
 
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
-  const [reorderMode, setReorderMode] = useState(false);
-  const [showExpandNotice, setShowExpandNotice] = useState(false);
+  // COLLAPSE
+  // const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  // const [reorderMode, setReorderMode] = useState(false);
+  // const [showExpandNotice, setShowExpandNotice] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem(LAST_SET_KEY);
@@ -107,11 +109,12 @@ const ProblemOutput = (): React.ReactElement => {
       setQuestions(parsed.questions);
       setSetName(parsed.name || parsed.topic || '');
 
-      try {
-        const saved = localStorage.getItem(collapsedKey(parsed.id));
-        if (saved) setCollapsedIds(new Set(JSON.parse(saved) as string[]));
-      } catch {
-      }
+      // COLLAPSE
+      // try {
+      //   const saved = localStorage.getItem(collapsedKey(parsed.id));
+      //   if (saved) setCollapsedIds(new Set(JSON.parse(saved) as string[]));
+      // } catch {
+      // }
     }
   }, []);
 
@@ -439,48 +442,71 @@ const ProblemOutput = (): React.ReactElement => {
     }
   };
 
-  const persistCollapsed = (next: Set<string>) => {
-    setCollapsedIds(next);
-    if (set?.id) {
-      localStorage.setItem(collapsedKey(set.id), JSON.stringify(Array.from(next)));
-    }
-  };
+  // COLLAPSE
+  // const persistCollapsed = (next: Set<string>) => {
+  //   setCollapsedIds(next);
+  //   if (set?.id) {
+  //     localStorage.setItem(collapsedKey(set.id), JSON.stringify(Array.from(next)));
+  //   }
+  // };
 
-  const toggleCollapse = (id: string) => {
-    const next = new Set(collapsedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    persistCollapsed(next);
-  };
+  // const toggleCollapse = (id: string) => {
+  //   const next = new Set(collapsedIds);
+  //   if (next.has(id)) next.delete(id);
+  //   else next.add(id);
+  //   persistCollapsed(next);
+  // };
 
-  const isQuestionCollapsed = (id: string) =>
-    editingId !== id &&
-    aiEditingId !== id &&
-    (reorderMode || collapsedIds.has(id));
+  // const isQuestionCollapsed = (id: string) =>
+  //   editingId !== id &&
+  //   aiEditingId !== id &&
+  //   (reorderMode || collapsedIds.has(id));
 
-  const reorder = (from: number, to: number) => {
-    if (from === to || to < 0 || to >= questions.length) return;
-    const copy = [...questions];
-    const [moved] = copy.splice(from, 1);
-    copy.splice(to, 0, moved);
-    updateLocalStorage({ ...set, questions: copy });
-
-    if (set.id) {
-      reorderQuestions(set.id, copy.map((q) => q.id)).catch((error) => {
-        console.error("Failed to save new order:", error);
-      });
-    }
-  };
+  // const reorder = (from: number, to: number) => {
+  //   if (from === to || to < 0 || to >= questions.length) return;
+  //   const copy = [...questions];
+  //   const [moved] = copy.splice(from, 1);
+  //   copy.splice(to, 0, moved);
+  //   updateLocalStorage({ ...set, questions: copy });
+  //
+  //   if (set.id) {
+  //     reorderQuestions(set.id, copy.map((q) => q.id)).catch((error) => {
+  //       console.error("Failed to save new order:", error);
+  //     });
+  //   }
+  // };
 
   const handleDragStart = (index: number) => setDragIndex(index);
   const handleDragEnter = (index: number) => {
     if (dragIndex === null || index === dragOverIndex) return;
     setDragOverIndex(index);
   };
+
+  // COLLAPSE
+  // const handleDrop = (targetIndex: number) => {
+  //   if (dragIndex !== null) reorder(dragIndex, targetIndex);
+  //   setDragIndex(null);
+  //   setDragOverIndex(null);
+  // };
+
   const handleDrop = (targetIndex: number) => {
-    if (dragIndex !== null) reorder(dragIndex, targetIndex);
+    if (dragIndex === null || dragIndex === targetIndex) {
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const copy = [...questions];
+    const [moved] = copy.splice(dragIndex, 1);
+    copy.splice(targetIndex, 0, moved);
+    updateLocalStorage({ ...set, questions: copy });
     setDragIndex(null);
     setDragOverIndex(null);
+
+    if (set?.id) {
+      reorderQuestions(set.id, copy.map((q) => q.id)).catch((error) => {
+        console.error("Failed to save new order:", error);
+      });
+    }
   };
   const handleDragEnd = () => {
     setDragIndex(null);
@@ -546,15 +572,16 @@ const ProblemOutput = (): React.ReactElement => {
 
   const handleExportWord = async (mode: PrintMode) => {
     try {
-      const needsGraphs = questions.some((q) =>
-        getEffectiveDisplay(q, displayOptions).includes('Graph space')
-      );
-      if (needsGraphs && (reorderMode || collapsedIds.size > 0)) {
-        setReorderMode(false);
-        persistCollapsed(new Set());
-        setShowExpandNotice(true);
-        return;
-      }
+      // COLLAPSE
+      // const needsGraphs = questions.some((q) =>
+      //   getEffectiveDisplay(q, displayOptions).includes('Graph space')
+      // );
+      // if (needsGraphs && (reorderMode || collapsedIds.size > 0)) {
+      //   setReorderMode(false);
+      //   persistCollapsed(new Set());
+      //   setShowExpandNotice(true);
+      //   return;
+      // }
 
       const graphImages = await captureAllGraphs();
 
@@ -671,12 +698,15 @@ const ProblemOutput = (): React.ReactElement => {
             const effIncludes = getEffectiveIncludes(q, outputIncludes);
             const effDisplay = getEffectiveDisplay(q, displayOptions);
             const isCustom = hasCustomSettings(q);
-            const collapsed = isQuestionCollapsed(q.id);
+            // COLLAPSE
+            // const collapsed = isQuestionCollapsed(q.id);
 
             return (
               <li
                 key={q.id}
-                className={`${styles.questionCard} ${collapsed ? styles.collapsed : ''} ${dragIndex === index ? styles.dragging : ''} ${dragOverIndex === index && dragIndex !== index ? styles.dropTarget : ''}`}
+                // COLLAPSE
+                // className={`${styles.questionCard} ${collapsed ? styles.collapsed : ''} ${dragIndex === index ? styles.dragging : ''} ${dragOverIndex === index && dragIndex !== index ? styles.dropTarget : ''}`}
+                className={`${styles.questionCard} ${dragIndex === index ? styles.dragging : ''} ${dragOverIndex === index && dragIndex !== index ? styles.dropTarget : ''}`}
                 draggable
                 onDragStart={() => handleDragStart(index)}
                 onDragEnter={() => handleDragEnter(index)}
@@ -687,6 +717,7 @@ const ProblemOutput = (): React.ReactElement => {
                 <div className={styles.dragHandle} aria-hidden="true">⠿</div>
 
                 <div className={styles.questionMain}>
+                  {/* COLLAPSE
                   <div
                     className={`${styles.questionTop} ${reorderMode ? '' : styles.questionTopClickable}`}
                     onClick={() => {
@@ -714,9 +745,15 @@ const ProblemOutput = (): React.ReactElement => {
                       </div>
                     )}
                   </div>
+                  */}
+                  
+                  <div className={styles.questionTop}>
+                    <span className={styles.questionIndex}>Question {index + 1}</span>
+                  </div>
 
-                  {!collapsed && (
-                    <>
+                  {/* {!collapsed && ( <> */}
+                  {/* {!collapsed && ( */}
+                  {/* <> */}
                       {editingId === q.id ? (
                         <div className={styles.editArea}>
 
@@ -950,11 +987,12 @@ const ProblemOutput = (): React.ReactElement => {
                           />
                         )}
                       </div>
-                    </>
-                  )}
+                  {/* </> */}
+                  {/* )} */}
                 </div>
 
-                {!collapsed && (
+                {/* {!collapsed && ( */}
+                {/* {!collapsed && ( */}
                   <div className={styles.questionSidebar}>
 
                     {settingsQuestionId === q.id && (
@@ -1057,7 +1095,7 @@ const ProblemOutput = (): React.ReactElement => {
                       Delete
                     </button>
                   </div>
-                )}
+                {/* )} */}
               </li>
             );
           })}
@@ -1293,6 +1331,7 @@ const ProblemOutput = (): React.ReactElement => {
         </div>
       )}
 
+      {/* COLLAPSE
       {showExpandNotice && (
         <div className={styles.modalOverlay} onClick={() => setShowExpandNotice(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -1309,6 +1348,7 @@ const ProblemOutput = (): React.ReactElement => {
           </div>
         </div>
       )}
+      */}
     </main>
   );
 };
