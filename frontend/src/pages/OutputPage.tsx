@@ -644,7 +644,11 @@ const ProblemOutput = (): React.ReactElement => {
                   <button className={styles.menuItem} onClick={() => { setShowSettingsModal(true); setShowSetMenu(false); }}>
                     Output settings
                   </button>
-                  <button className={styles.menuItem} onClick={() => { setShowDuplicateModal(true); setShowSetMenu(false); }}>
+                  <button className={styles.menuItem} onClick={() => { 
+                    setDuplicateName(`Copy of ${set?.name || set?.topic || 'Untitled set'}`);
+                    setShowDuplicateModal(true); 
+                    setShowSetMenu(false); 
+                  }}>
                     Create similar version
                   </button>
                   <div className={styles.menuDivider} />
