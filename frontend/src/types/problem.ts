@@ -67,11 +67,11 @@ export const OUTPUT_INCLUDES: OutputInclude[] = [
   'Teacher tip',
 ];
 
-export type DisplayOption = 'Answer space' | 'Extra room for solution' | 'Graph / diagram space' | 'Difficulty tag';
+export type DisplayOption = 'Answer space' | 'Extra room for solution' | 'Graph space' | 'Difficulty tag';
 
 export const DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
-  'Graph / diagram space',
+  'Graph space',
   'Difficulty tag',
 ];
 
@@ -177,9 +177,9 @@ export interface GraphConfig {
 }
 
 export const GRAPH_SIZE_PX: Record<GraphConfig['size'], number> = {
-  sm: 160,
-  md: 220,
-  lg: 320,
+  sm: 200,
+  md: 260, 
+  lg: 320, 
 };
 
 export const DEFAULT_GRAPH_CONFIG: GraphConfig = {

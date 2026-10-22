@@ -131,8 +131,13 @@ const Generator = (): React.ReactElement => {
   const selectedFormats = Array.from(new Set(formData.questionGroups.map(g => g.format)));
   const selectedDifficulties = Array.from(new Set(formData.questionGroups.map(g => g.difficulty)));
 
+  const effectiveSetName = formData.setName?.trim() ||
+    [formData.mainTopic, formData.subtopic, new Date().toLocaleDateString()]
+      .filter(Boolean)
+      .join(' ') || 'Untitled Set';
+
   const goNext = () => {
-    if (step === 1 && (!formData.setName?.trim() || !formData.mainTopic || !formData.subtopic || !activePrepLevel)) return;
+    if (step === 1 && (!formData.mainTopic || !formData.subtopic || !activePrepLevel)) return;
     setStep((s) => Math.min(4, s + 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -154,7 +159,7 @@ const Generator = (): React.ReactElement => {
     : 'None';
 
   const promptPreview = [
-    `Set Name: ${formData.setName || 'Untitled'}`,
+    `Set Name: ${effectiveSetName}`,
     `Grade: ${activePrepLevel}`,
     `Topic: ${fullTopicString}`,
     `Formats: ${selectedFormats.join(', ') || 'None'}`,
@@ -170,7 +175,7 @@ const Generator = (): React.ReactElement => {
 
     try {
       const generatedSet = await generateSet({
-        setName: formData.setName,
+        setName: effectiveSetName,
         topic: fullTopicString,
         difficulty: formData.difficulty,
         prepLevel: activePrepLevel,
@@ -179,7 +184,7 @@ const Generator = (): React.ReactElement => {
 
       const formattedSet = {
         ...generatedSet,
-        name: formData.setName,
+        name: effectiveSetName,
         prepLevel: generatedSet.prep_level || activePrepLevel,
         formData: formData,
         questions: generatedSet.questions.map((q: GeneratedQuestion) => ({
@@ -219,7 +224,7 @@ const Generator = (): React.ReactElement => {
           <FeedbackButton
             context={{
               section: `generator-step-${step}`,
-              metadata: { setName: formData.setName, prepLevel: activePrepLevel },
+              metadata: { setName: effectiveSetName, prepLevel: activePrepLevel },
             }}
           />
           <ProfileButton />
@@ -248,15 +253,6 @@ const Generator = (): React.ReactElement => {
 
             {step === 1 && (
               <div className={styles.formGrid}>
-                <label className={`${styles.field} ${styles.full}`}>
-                  <span>Set Name *</span>
-                  <input
-                    value={formData.setName || ''}
-                    onChange={(e) => persistDraft({ ...formData, setName: e.target.value })}
-                    placeholder="e.g., Pop Quiz: Hockey & Interest Rates"
-                  />
-                </label>
-
                 <div className={`${styles.field} ${styles.full}`}>
                   <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                     Curriculum Alignment *
@@ -302,7 +298,7 @@ const Generator = (): React.ReactElement => {
                   </div>
                 </div>
 
-                <label className={styles.field}>
+                <label className={`${styles.field} ${styles.full}`}>
                   <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                     Real-world context <em>Optional</em>
                     <InfoTooltip text="Add a theme relevant to your students, such as sports, music, or local events, to make the problems more engaging and relatable." />
@@ -314,18 +310,31 @@ const Generator = (): React.ReactElement => {
                   />
                 </label>
 
-                <label className={`${styles.field} ${styles.full}`}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                    Custom rules <em>Optional</em>
-                    <InfoTooltip text="Specify any additional constraints the AI should follow when generating problems, such as using whole numbers only or avoiding negative answers." />
-                  </span>
-                  <textarea
-                    rows={2}
-                    value={formData.customRules}
-                    onChange={(e) => persistDraft({ ...formData, customRules: e.target.value })}
-                    placeholder="e.g., Use whole numbers only, avoid negative answers"
-                  />
-                </label>
+                <div className={`${styles.full} ${styles.fieldGroup}`}>
+                  <label className={styles.field}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      Custom rules <em>Optional</em>
+                      <InfoTooltip text="Specify any additional constraints the AI should follow when generating problems, such as using whole numbers only or avoiding negative answers." />
+                    </span>
+                    <textarea
+                      rows={2}
+                      value={formData.customRules}
+                      onChange={(e) => persistDraft({ ...formData, customRules: e.target.value })}
+                      placeholder="e.g., Use whole numbers only, avoid negative answers"
+                    />
+                  </label>
+
+                  <label className={styles.field}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                      Set Name <em>Optional</em>
+                    </span>
+                    <input
+                      value={formData.setName || ''}
+                      onChange={(e) => persistDraft({ ...formData, setName: e.target.value })}
+                      placeholder="e.g., Pop Quiz: Hockey & Interest Rates"
+                    />
+                  </label>
+                </div>
               </div>
             )}
 
@@ -440,7 +449,7 @@ const Generator = (): React.ReactElement => {
                           <span>{o}</span>
                         </label>
                       ))}
-                      {['Answer space', 'Graph / diagram space', 'Difficulty tag'].map((d) => (
+                      {['Answer space', 'Graph space', 'Difficulty tag'].map((d) => (
                         <label key={d} className={styles.checkCard}>
                           <input
                             type="checkbox"
@@ -494,7 +503,8 @@ const Generator = (): React.ReactElement => {
                     )}
 
                     <div className={styles.previewQuestionRow}>
-                      <strong>1. If a hockey team deposits $6,500 at 6.5% interest...</strong>
+                      1. <strong>If a hockey team deposits $6,500 at 6.5% interest...
+                      </strong>
                       {formData.displayOptions.includes('Difficulty tag') && (
                         <span className={styles.previewDifficultyTag}>Medium</span>
                       )}
@@ -502,11 +512,11 @@ const Generator = (): React.ReactElement => {
 
                     {formData.outputIncludes.includes('Hints') && (
                       <div className={styles.previewHint}>
-                        Hint: Use the compound interest formula to start.
+                        <strong>Hint:</strong> Use the compound interest formula to start.
                       </div>
                     )}
 
-                    {formData.displayOptions.includes('Graph / diagram space') && (
+                    {formData.displayOptions.includes('Graph space') && (
                       <div className={styles.previewGraphSpace} />
                     )}
 
@@ -516,21 +526,30 @@ const Generator = (): React.ReactElement => {
                       </div>
                     )}
 
-                    {(formData.outputIncludes.includes('Answer key') || formData.outputIncludes.includes('Worked solutions')) && (
-                      <div className={styles.previewTeacherKey}>
-                        <span className={styles.previewTeacherKeyLabel}>Teacher Key Visible</span>
+                    {(formData.outputIncludes.includes('Answer key') ||
+                      formData.outputIncludes.includes('Worked solutions') ||
+                      formData.outputIncludes.includes('Teacher tip')) && (
+                        <div className={styles.previewTeacherKey}>
+                          <span className={styles.previewTeacherKeyLabel}>Teacher Key Visible</span>
 
-                        {formData.outputIncludes.includes('Worked solutions') && (
-                          <div className={styles.previewWorkedSolution}>
-                            A = 6500(1 + 0.065)³ <br /> A ≈ 7851.68
-                          </div>
-                        )}
+                          {formData.outputIncludes.includes('Worked solutions') && (
+                            <div className={styles.previewWorkedSolution}>
+                              A = 6500(1 + 0.065)³ <br /> A ≈ 7851.68
+                            </div>
+                          )}
 
-                        {formData.outputIncludes.includes('Answer key') && (
-                          <div className={styles.previewFinalAnswer}>Final: $7,851.68</div>
-                        )}
-                      </div>
-                    )}
+                          {formData.outputIncludes.includes('Answer key') && (
+                            <div className={styles.previewFinalAnswer}>Final: $7,851.68</div>
+                          )}
+
+                          {formData.outputIncludes.includes('Teacher tip') && (
+                            <div className={styles.previewTeacherTip}>
+                              <span className={styles.previewTeacherTipLabel}>Teacher tip</span>
+                              Remind students to convert the rate to a decimal first.
+                            </div>
+                          )}
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
@@ -548,7 +567,7 @@ const Generator = (): React.ReactElement => {
                 <div className={styles.reviewGrid}>
                   <div>
                     <small>LEARNING GOAL</small>
-                    <strong>{formData.setName || formData.mainTopic || 'Not specified'}</strong>
+                    <strong>{effectiveSetName}</strong>
                     <p>{activePrepLevel} · {profile.subjects[0]}{formData.subtopic ? ` · ${formData.subtopic}` : ''}</p>
                   </div>
                   <div>
@@ -569,7 +588,7 @@ const Generator = (): React.ReactElement => {
                     </p>
                     <p>
                       <strong>Teacher:</strong>{' '}
-                      {formData.outputIncludes.filter(o => ['Answer key', 'Worked solutions'].includes(o)).join(', ') || 'None'}
+                      {formData.outputIncludes.filter(o => ['Answer key', 'Worked solutions', 'Teacher tip'].includes(o)).join(', ') || 'None'}
                     </p>
                   </div>
                 </div>
@@ -582,7 +601,7 @@ const Generator = (): React.ReactElement => {
                 <button
                   className={styles.primaryButton}
                   onClick={goNext}
-                  disabled={step === 1 && (!formData.setName?.trim() || !formData.mainTopic || !formData.subtopic || !activePrepLevel)}
+                  disabled={step === 1 && (!formData.mainTopic || !formData.subtopic || !activePrepLevel)}
                 >
                   Continue <span>→</span>
                 </button>
@@ -590,7 +609,7 @@ const Generator = (): React.ReactElement => {
                 <button
                   className={`${styles.primaryButton} ${styles.generate}`}
                   onClick={handleGenerate}
-                  disabled={loading || totalQuestions === 0 || !formData.setName?.trim()}
+                  disabled={loading || totalQuestions === 0}
                 >
                   {loading ? 'Generating…' : 'Generate problems'} <span>✦</span>
                 </button>

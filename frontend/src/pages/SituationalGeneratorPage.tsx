@@ -440,7 +440,7 @@ const SituationalGenerator = (): React.ReactElement => {
                           <span>{o}</span>
                         </label>
                       ))}
-                      {['Answer space', 'Graph / diagram space', 'Difficulty tag'].map((d) => (
+                      {['Answer space', 'Graph space', 'Difficulty tag'].map((d) => (
                         <label key={d} className={styles.checkCard}>
                           <input
                             type="checkbox"
@@ -506,7 +506,7 @@ const SituationalGenerator = (): React.ReactElement => {
                       </div>
                     )}
 
-                    {formData.displayOptions.includes('Graph / diagram space') && (
+                    {formData.displayOptions.includes('Graph space') && (
                       <div className={styles.previewGraphSpace} />
                     )}
 
