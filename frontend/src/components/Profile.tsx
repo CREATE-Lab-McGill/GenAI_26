@@ -1,6 +1,7 @@
-import { User } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../styles/ProfileStyles.module.css';
+import { MATH_AVATARS } from '../types/avatar';
 
 interface ProfileButtonProps {
   name?: string;
@@ -9,6 +10,8 @@ interface ProfileButtonProps {
   size?: 'default' | 'small';
 }
 
+const AVATAR_KEY = 'mathcraft_user_avatar';
+
 const ProfileButton = ({
   name,
   subtitle,
@@ -16,6 +19,21 @@ const ProfileButton = ({
   size = 'default',
 }: ProfileButtonProps): React.ReactElement => {
   const navigate = useNavigate();
+  
+  const [avatarId, setAvatarId] = useState(() => {
+    return localStorage.getItem(AVATAR_KEY) || 'calculator';
+  });
+
+  useEffect(() => {
+    const handleAvatarChange = () => {
+      setAvatarId(localStorage.getItem(AVATAR_KEY) || 'calculator');
+    };
+    window.addEventListener('avatarChanged', handleAvatarChange);
+    return () => window.removeEventListener('avatarChanged', handleAvatarChange);
+  }, []);
+
+  const activeAvatar = MATH_AVATARS.find(a => a.id === avatarId) || MATH_AVATARS[0];
+  const ActiveAvatarIcon = activeAvatar.Icon; 
 
   return (
     <button
@@ -23,8 +41,15 @@ const ProfileButton = ({
       onClick={() => navigate('/account')}
       aria-label="Go to profile"
     >
-      <span className={styles.avatar}>
-        <User size={variant === 'full' ? 18 : 16} strokeWidth={1.8} />
+      <span 
+        className={styles.avatar} 
+        style={{ background: activeAvatar.bg }}
+      >
+        <ActiveAvatarIcon 
+          size={variant === 'full' ? 18 : 16} 
+          color="#ffffff" 
+          strokeWidth={2.5} 
+        />
       </span>
 
       {variant === 'full' && (name || subtitle) && (

@@ -6,9 +6,12 @@ import { getSets, deleteSet } from '../api/client';
 import styles from '../styles/AccountPageStyles.module.css';
 import FeedbackButton from '../components/Feedback';
 import LogoBanner from '../components/LogoBanner';
+import AvatarSelector from '../components/AvatarSelector';
+import { MATH_AVATARS } from '../types/avatar';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
 const DEFAULTS_KEY = 'mathcraft_generator_defaults';
+const AVATAR_KEY = 'mathcraft_user_avatar';
 
 type Tab = 'history' | 'sets';
 
@@ -93,6 +96,11 @@ const icons = {
       <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
     </svg>
   ),
+  edit: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </svg>
+  ),
 };
 
 const Account = (): React.ReactElement => {
@@ -103,6 +111,7 @@ const Account = (): React.ReactElement => {
   const [loadingSets, setLoadingSets] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('history');
   const [hasSavedDefaults, setHasSavedDefaults] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   const [prepProfiles, setPrepProfiles] = useState<PrepProfile[]>(INITIAL_PREP_PROFILES);
   const [activePrepProfileId, setActivePrepProfileId] = useState(INITIAL_PREP_PROFILES[0].id);
@@ -169,6 +178,19 @@ const Account = (): React.ReactElement => {
     }
   };
 
+  const [activeAvatarId, setActiveAvatarId] = useState(() => {
+    return localStorage.getItem(AVATAR_KEY) || 'calculator';
+  });
+
+  const handleAvatarChange = (id: string) => {
+    setActiveAvatarId(id);
+    localStorage.setItem(AVATAR_KEY, id);
+    window.dispatchEvent(new Event('avatarChanged'));
+  };
+
+  const activeAvatar = MATH_AVATARS.find(a => a.id === activeAvatarId) || MATH_AVATARS[0];
+  const ActiveAvatarIcon = activeAvatar.Icon;
+
   const activeList = activeTab === 'history' ? history : savedSets;
 
   return (
@@ -189,13 +211,36 @@ const Account = (): React.ReactElement => {
 
           <section className={styles.card}>
             <div className={styles.profileHeader}>
-              <div className={styles.avatar}>{profile.name.split(' ').map((n) => n[0]).join('')}</div>
+              
+              <button 
+                className={styles.avatarWrapper} 
+                onClick={() => setIsAvatarModalOpen(true)}
+                aria-label="Edit avatar"
+              >
+                <div
+                  className={styles.avatar}
+                  style={{ background: activeAvatar.bg }}
+                >
+                  <ActiveAvatarIcon size={32} color="#ffffff" strokeWidth={2} />
+                </div>
+                <div className={styles.avatarEditOverlay}>
+                  {icons.edit}
+                </div>
+              </button>
+
               <div>
                 <h1>{profile.name}</h1>
                 <p>{profile.email}</p>
                 <p className={styles.schoolText}>{profile.school}</p>
               </div>
             </div>
+
+            <AvatarSelector
+              isOpen={isAvatarModalOpen}
+              activeId={activeAvatarId}
+              onClose={() => setIsAvatarModalOpen(false)}
+              onSelect={handleAvatarChange}
+            />
 
             <div className={styles.presetBlock}>
               <span className={styles.fieldLabel}>Generation preset</span>
