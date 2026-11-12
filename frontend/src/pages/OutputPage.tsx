@@ -19,8 +19,15 @@ import "mathlive";
 import { saveAs } from 'file-saver';
 import { GraphCanvas } from '../components/GraphCanvas';
 import { toPng } from 'html-to-image';
-import { DEFAULT_GRAPH_CONFIG, type GraphConfig } from '../types/problem';
+import {
+  DEFAULT_GRAPH_CONFIG,
+  DEFAULT_TRIANGLE_CONFIG,
+  type GraphConfig,
+  type TriangleConfig,
+} from '../types/problem';
 import GraphSettingsEditor from '../components/GraphSettingsEditor';
+import { TriangleFigure } from '../components/TriangleFigure';
+import TriangleSettingsEditor from '../components/TriangleSettingsEditor';
 import LogoBanner from '../components/LogoBanner';
 
 const LAST_SET_KEY = 'mathcraft_last_generated_set';
@@ -39,12 +46,16 @@ const QUESTION_INCLUDE_OPTIONS: OutputInclude[] = ['Hints'];
 const QUESTION_DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
   'Graph space',
+  'Triangle',
   'Difficulty tag',
 ];
 
 function toggleInArray<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
+
+const hasAnyOverride = (o?: GeneratedQuestion['outputOverrides']): boolean =>
+  !!o && (!!o.outputIncludes || !!o.displayOptions || !!o.graphConfig || !!o.triangleConfig);
 
 type PrintMode = 'student' | 'teacher';
 
@@ -202,8 +213,7 @@ const ProblemOutput = (): React.ReactElement => {
     q.outputOverrides?.displayOptions ?? setDisplay;
 
   const hasCustomSettings = (q: GeneratedQuestion): boolean =>
-    !!q.outputOverrides?.outputIncludes || !!q.outputOverrides?.displayOptions ||
-    !!q.outputOverrides?.graphConfig;
+    hasAnyOverride(q.outputOverrides);
 
   const arraysEqualUnordered = <T,>(a: T[], b: T[]): boolean => {
     if (a.length !== b.length) return false;
@@ -227,9 +237,7 @@ const ProblemOutput = (): React.ReactElement => {
         newOverrides.outputIncludes = updated;
       }
 
-      const hasAnyOverride =
-        !!newOverrides.outputIncludes || !!newOverrides.displayOptions || !!newOverrides.graphConfig;
-      return { ...item, outputOverrides: hasAnyOverride ? newOverrides : undefined };
+      return { ...item, outputOverrides: hasAnyOverride(newOverrides) ? newOverrides : undefined };
     });
     const newSet = { ...set, questions: updatedQuestions };
     updateLocalStorage(newSet);
@@ -248,6 +256,22 @@ const ProblemOutput = (): React.ReactElement => {
       item.id !== q.id
         ? item
         : { ...item, outputOverrides: { ...item.outputOverrides, graphConfig: updatedConfig } }
+    );
+    const newSet = { ...set, questions: updatedQuestions };
+    updateLocalStorage(newSet);
+    persistQuestionOverrides(newSet, q.id, true);
+  };
+
+  const updateTriangleConfig = (q: GeneratedQuestion, newConfig: Partial<TriangleConfig>) => {
+    if (!set) return;
+
+    const currentConfig = q.outputOverrides?.triangleConfig ?? DEFAULT_TRIANGLE_CONFIG;
+    const updatedConfig = { ...currentConfig, ...newConfig };
+
+    const updatedQuestions = questions.map((item) =>
+      item.id !== q.id
+        ? item
+        : { ...item, outputOverrides: { ...item.outputOverrides, triangleConfig: updatedConfig } }
     );
     const newSet = { ...set, questions: updatedQuestions };
     updateLocalStorage(newSet);
@@ -281,9 +305,7 @@ const ProblemOutput = (): React.ReactElement => {
         newOverrides.displayOptions = updated;
       }
 
-      const hasAnyOverride =
-        !!newOverrides.outputIncludes || !!newOverrides.displayOptions || !!newOverrides.graphConfig;
-      return { ...item, outputOverrides: hasAnyOverride ? newOverrides : undefined };
+      return { ...item, outputOverrides: hasAnyOverride(newOverrides) ? newOverrides : undefined };
     });
     const newSet = { ...set, questions: updatedQuestions };
     updateLocalStorage(newSet);
@@ -548,6 +570,22 @@ const ProblemOutput = (): React.ReactElement => {
     const images: Record<string, string> = {};
     for (const q of questions) {
       const effDisplay = getEffectiveDisplay(q, displayOptions);
+
+      if (effDisplay.includes('Triangle')) {
+        const triNode = document.getElementById(`triangle-${q.id}`);
+        if (triNode) {
+          try {
+            images[`triangle-${q.id}`] = await toPng(triNode, {
+              pixelRatio: 3,
+              backgroundColor: '#ffffff',
+              skipFonts: true
+            });
+          } catch (err) {
+            console.error(`Error capturing triangle ${q.id}:`, err);
+          }
+        }
+      }
+
       if (!effDisplay.includes('Graph space')) continue;
 
       const node = document.getElementById(`graph-${q.id}`);
@@ -587,9 +625,15 @@ const ProblemOutput = (): React.ReactElement => {
 
       const graphImages = await captureAllGraphs();
 
+      const payloadQuestions = questions.map((q) => ({
+        ...q,
+        effIncludes: getEffectiveIncludes(q, outputIncludes),
+        effDisplay: getEffectiveDisplay(q, displayOptions),
+      }));
+
       const blob = await exportWordDocument({
         name: set!.name || set!.topic || 'Untitled set',
-        questions: questions,
+        questions: payloadQuestions,
         mode: mode,
         graphImages
       });
@@ -888,6 +932,14 @@ const ProblemOutput = (): React.ReactElement => {
                             />
                           )}
 
+                          {effDisplay.includes('Triangle') && (
+                            <TriangleFigure
+                              id={`triangle-${q.id}`}
+                              config={q.outputOverrides?.triangleConfig ?? DEFAULT_TRIANGLE_CONFIG}
+                              size={220}
+                            />
+                          )}
+
                           {effDisplay.includes('Answer space') && (
                             <div className={styles.answerLine}>
                               Answer: _________________________________________________
@@ -1060,6 +1112,15 @@ const ProblemOutput = (): React.ReactElement => {
                               <GraphSettingsEditor
                                 currentConfig={q.outputOverrides?.graphConfig ?? set.formData?.graphConfig ?? DEFAULT_GRAPH_CONFIG}
                                 onUpdate={(newConfig) => updateGraphConfig(q, newConfig)}
+                              />
+                            </div>
+                          )}
+
+                          {effDisplay.includes('Triangle') && (
+                            <div style={{ marginTop: '12px' }}>
+                              <TriangleSettingsEditor
+                                currentConfig={q.outputOverrides?.triangleConfig ?? DEFAULT_TRIANGLE_CONFIG}
+                                onUpdate={(newConfig) => updateTriangleConfig(q, newConfig)}
                               />
                             </div>
                           )}

@@ -67,8 +67,14 @@ export const OUTPUT_INCLUDES: OutputInclude[] = [
   'Teacher tip',
 ];
 
-export type DisplayOption = 'Answer space' | 'Extra room for solution' | 'Graph space' | 'Difficulty tag';
+export type DisplayOption =
+  | 'Answer space'
+  | 'Extra room for solution'
+  | 'Graph space'
+  | 'Triangle'
+  | 'Difficulty tag';
 
+  
 export const DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
   'Graph space',
@@ -123,6 +129,7 @@ export interface QuestionOutputOverrides {
   outputIncludes?: OutputInclude[];
   displayOptions?: DisplayOption[];
   graphConfig?: GraphConfig;
+  triangleConfig?: TriangleConfig;
 }
 
 export interface GeneratedQuestion {
@@ -189,4 +196,34 @@ export const DEFAULT_GRAPH_CONFIG: GraphConfig = {
   yRange: [-10, 10],
   step: 2,
   showLabels: true,
+};
+
+export interface TriangleConfig {
+  a: number;
+  b: number; 
+  c: number;
+  vertexLabels: [string, string, string];
+  sideLabels: { a: string; b: string; c: string }; 
+  angleLabels: { A: string; B: string; C: string };  
+  rightAngleAt?: 'A' | 'B' | 'C' | null; 
+
+  shapeMode?: 'sides' | 'angles';
+  anglesConfig?: { A: string; B: string; C: string };
+  showVertices?: boolean;
+  showSideLabels?: boolean;
+  showSideCongruence?: boolean;
+  showAngleLabels?: boolean;
+  showAngleArcs?: boolean;
+  showRightAngleMarker?: boolean;
+  displayMode?: string;
+}
+
+export const DEFAULT_TRIANGLE_CONFIG: TriangleConfig = {
+  a: 5,
+  b: 4,
+  c: 3,
+  vertexLabels: ['A', 'B', 'C'],
+  sideLabels: { a: '', b: '', c: '' },
+  angleLabels: { A: '', B: '', C: '' },
+  rightAngleAt: 'A',
 };
