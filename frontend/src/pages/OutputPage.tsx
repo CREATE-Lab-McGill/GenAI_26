@@ -43,7 +43,6 @@ const STUDENT_DISPLAY_OPTIONS: DisplayOption[] = [
 ];
 
 const QUESTION_INCLUDE_OPTIONS: OutputInclude[] = ['Hints'];
-// 'Triangle' is a per-question option only (it is not in the set-wide settings)
 const QUESTION_DISPLAY_OPTIONS: DisplayOption[] = [
   'Answer space',
   'Graph space',
@@ -626,9 +625,15 @@ const ProblemOutput = (): React.ReactElement => {
 
       const graphImages = await captureAllGraphs();
 
+      const payloadQuestions = questions.map((q) => ({
+        ...q,
+        effIncludes: getEffectiveIncludes(q, outputIncludes),
+        effDisplay: getEffectiveDisplay(q, displayOptions),
+      }));
+
       const blob = await exportWordDocument({
         name: set!.name || set!.topic || 'Untitled set',
-        questions: questions,
+        questions: payloadQuestions,
         mode: mode,
         graphImages
       });

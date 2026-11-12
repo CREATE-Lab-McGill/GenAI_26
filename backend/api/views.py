@@ -254,36 +254,60 @@ def export_word(request):
 
         temp_images = []  
 
+        def process_and_add_image(image_base64):
+            if not image_base64:
+                return None
+            if "," in image_base64:
+                image_base64 = image_base64.split(",")[1]
+            
+            img_bytes = base64.b64decode(image_base64)
+            img_temp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+            img_temp.write(img_bytes)
+            img_temp.close()
+            temp_images.append(img_temp.name)
+            return img_temp.name
+
         for i, question in enumerate(questions):
             md_content += f"### Question {i + 1}\n\n"
             md_content += f"{question.get('prompt', '')}\n\n"
 
+            eff_includes = question.get("effIncludes", [])
+            eff_display = question.get("effDisplay", [])
             q_id = question.get("id")
-            img_data_url = graph_images.get(q_id)
-            if img_data_url:
-                if "," in img_data_url:
-                    img_data_url = img_data_url.split(",")[1]
-                
-                img_bytes = base64.b64decode(img_data_url)
-                
-                img_temp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-                img_temp.write(img_bytes)
-                img_temp.close()
-                temp_images.append(img_temp.name)
 
-                md_content += f"![]({img_temp.name})\n\n"
+            if "Hints" in eff_includes and question.get("hint"):
+                md_content += f"**Hint:** {question.get('hint')}\n\n"
+
+            if "Graph space" in eff_display:
+                img_path = process_and_add_image(graph_images.get(q_id))
+                if img_path:
+                    md_content += f"![]({img_path})\n\n"
+
+            if "Triangle" in eff_display:
+                img_path = process_and_add_image(graph_images.get(f"triangle-{q_id}"))
+                if img_path:
+                    md_content += f"![]({img_path})\n\n"
+
+            if "Answer space" in eff_display:
+                md_content += f"Answer: _________________________________________________\n\n"
 
             if mode == "teacher":
-                if question.get("solution"):
+                if "Worked solutions" in eff_includes and question.get("solution"):
                     md_content += (
-                        f"**Solution:**\n\n"
+                        f"**Solution Steps:**\n\n"
                         f"{question.get('solution')}\n\n"
                     )
 
-                if question.get("answer"):
+                if "Answer key" in eff_includes and question.get("answer"):
                     md_content += (
                         f"**Final Answer:** "
                         f"{question.get('answer')}\n\n"
+                    )
+
+                if "Teacher tip" in eff_includes and question.get("teacherTip"):
+                    md_content += (
+                        f"**Teacher tip:** "
+                        f"{question.get('teacherTip')}\n\n"
                     )
             else:
                 md_content += "---\n\n"
@@ -324,7 +348,7 @@ def export_word(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=500)
-
+ 
     
 @api_view(["POST"])
 def reorder_questions(request, pk):
